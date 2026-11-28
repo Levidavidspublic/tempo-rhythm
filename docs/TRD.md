@@ -3,6 +3,7 @@
 > **Version:** 5 Oct 2026. Replaces the April verbatim copy of this file.
 > **Base:** `02-TRD.md` (20 Sep) with its 30 Sep decision update folded in. **Changed only where the 5 Oct PRD forces it.** Each forced change is marked **(5 Oct)**.
 > `[EXTRAPOLATED]` = filled in by Claude, for Amit to confirm. `UNKNOWN` = not verifiable.
+> **Added 28 Nov 2026:** §5e Coach presence (PRD §15).
 
 **Verdict.**
 
@@ -182,6 +183,20 @@ Convex-only: no separate voice server. The browser talks to Deepgram directly; C
 - Copy lives in `apps/web/messages/en.json` and `he.json`. A missing Hebrew key falls back to English.
 - The coach and TTS answer in `users.locale`.
 
+## 5e. Coach presence (28 Nov 2026) [EXTRAPOLATED design]
+
+Serves PRD §15 (R-11 to R-18). Design only: nothing here is built or Verified.
+
+- **Backend.** New work follows the repo's current AGENTS.md: InsForge (Postgres + RLS, `@insforge/sdk`) on the client and op modules under `apps/web/lib/server/ops/` on the server. The Convex wording in §1 and §5a predates that move; which sections get rewritten for InsForge is an open question below, not resolved here.
+- **Avatar (R-13).** Drawn in the browser, so it costs no server compute. Candidate stack: PixiJS with pixi-live2d-display, as in OpenAmika (MIT harness). The Live2D Cubism Core runtime is proprietary; whether it may ship under HARD_RULES §3 is **UNKNOWN**. A VRM path is the fallback, also **UNKNOWN**. Each reply carries an emotion tag (for example calm, warm, upbeat, concerned) that drives the expression and the voice style. Reduced motion freezes to a still pose; no idle loop on a regular beat.
+- **Voice loop (R-14).** The §5a pipeline (speech-to-text → coach → text-to-speech, sentence by sentence) gains an emotion tag per sentence and push-to-talk beside hands-free. Echo cancellation uses the browser's own microphone constraints (`echoCancellation`, `noiseSuppression`); whether that is enough on every target browser is **UNKNOWN** until tested. Target: about 1 s per reply (§5a budget). OpenAmika's authors claim about 900 ms on their stack; that is their claim, not a Tempo measurement.
+- **Screen view (R-11, R-12).** Browser screen capture (`getDisplayMedia`) runs only after the user presses Share, with a visible indicator and one-tap stop. Frames are sampled at a low rate (rate **UNKNOWN**, to be set by cost tests), downscaled, sent to a vision model in memory, and dropped. Only the model's short text observation ("user is on the essay; no typing for 4 minutes") reaches the coach thread. A frame persists only when the user saves a snapshot to a page. The screen-view entry point is marked `// RAM-ONLY`, and the scanner audit (`bun run scan:ram-only-audit`) must cover it. Which runtime vision model, and on which service that passes gate G-1 (PRD R-09), is **UNKNOWN**.
+- **Body-doubling session (R-11).** A session record (start, goal, check-in pace, status), check-ins scheduled by the same job runner as §5d, written in the user's accepted phrases (F-60). Stuck detection without screen view = no progress events plus a missed check-in. With screen view = the vision observation.
+- **Reflection and daily journal (R-15, R-16).** Two scheduled jobs over memory, on the §5d runner: a reflect pass that writes an `observations` row the coach may open with, and an end-of-day job that drafts a journal page for the user to keep or discard. Kept pages go through the auto-tag memory. Both only read memories the user can see.
+- **Tools over MCP (R-18).** Unchanged from §6 and `docs/research/EXECUTOR-IN-TEMPO.md`: Tempo is an MCP client of the person's own Executor account; external writes are confirmed.
+- **Messengers (R-17, Gen 2+).** Telegram and Discord bridges post into the same coach thread. Inbound messages follow the RAM-only scanner rule. Bridge hosting is **UNKNOWN**.
+- **Reuse.** OpenAmika code may be adapted only with its MIT notice kept in each adapted file (HARD_RULES §3). None of its character, voice or model files are used. Its GPL-3.0 helper is not a dependency.
+
 ## 6. Connectors
 
 Executor (executor.sh) behind an adapter: reads plus light writes, heavy writes hard-refused, every external write confirmed. Executor's call shape and env var names: UNKNOWN. Not in next week's batch.
@@ -240,6 +255,10 @@ Diagrams and Graphify: Graphify 0.9.74 runs on push to `integration`.
 4. **(5 Oct)** Does Together host DeepSeek V4.1 Flash for failover?
 5. **(5 Oct)** NVIDIA Voicechat: its env var name, its licence for paid use, and Hebrew.
 6. **(5 Oct)** The exact ChatGPT and Claude memory export formats.
+7. **(28 Nov)** Which runtime vision model reads screen frames, and on which G-1-cleared service?
+8. **(28 Nov)** Avatar runtime: Live2D (licence fit with HARD_RULES §3 UNKNOWN) or VRM?
+9. **(28 Nov)** Which TRD sections are rewritten for InsForge, and when (§1, §5, §5a still say Convex)?
+10. **(28 Nov)** Screen-frame sample rate and cost per minute of body doubling.
 
 ## Sources
 
@@ -251,6 +270,7 @@ Diagrams and Graphify: Graphify 0.9.74 runs on push to `integration`.
 - Claude Code docs: Mods overview, Create a mod (read 5 Oct 2026)
 - Via Context7, 5 Oct: `/get-convex/agent` (agent usage, context, streaming, tool approval, RAG); Convex vector search docs; `/websites/ai-sdk_dev` DeepInfra provider; `/vercel-labs/json-render` (catalog prompt, generation modes, skills)
 - DeepInfra embeddings catalogue; Graphify, Understand Anything and Hindsight READMEs (read 5 Oct)
+- **(28 Nov)** OpenAmika README (github.com/zeekk0/OpenAmika); Animates store listings; `docs/research/companion-presence-2026-11-28.md`
 
 
 ---

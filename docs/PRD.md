@@ -5,6 +5,7 @@
 > Items in the April master document that none of these carry forward count as superseded.
 > **Precedence:** HARD_RULES > ticket > PRD > chat prompt.
 > **Amendment (8 Oct 2026):** see §13. It records the owner's clarified daily-life-support direction and a bounded weekend target, and it marks which earlier statements it supersedes. Everything else in this file is unchanged history.
+> **Amendment (28 Nov 2026):** see §15. Coach presence: body doubling, screen-share tutoring, animated coach avatar, reflection, daily journal, tools over MCP.
 > **Tags:** every feature carries one horizon: **[NW]** next week · **[MVP]** · **[END]** end product. `[EXTRAPOLATED]` = filled in by Claude, for Amit to confirm. `UNKNOWN` = not verifiable from the sources or official docs.
 
 ## 0. Verdict
@@ -126,6 +127,8 @@ The boundary is Claude's reading of "V0.5 polished" in the 16 Sep PRD plus the p
 | F-34 | English speech-to-speech on NVIDIA Nemotron 3 Voicechat. Its licence for a paid product and its language list (Hebrew) are UNKNOWN. | MVP, once verified | Known facts; Amit 5 Oct |
 | F-35 | Walkie-talkie push-to-talk on every tier. Live conversation on Pro/Max at 90/180 minutes a day. | MVP (with billing) | 16 Sep §4 |
 | F-36 | Audio recap of a note set; screen sharing with the coach. | END | 16 Sep SHOULD |
+
+> *28 Nov: screen sharing is now specified as body doubling and tutoring in §15 (R-11, R-12).*
 
 ### 4.4 Modules: Tempo changes itself
 
@@ -392,3 +395,52 @@ These are dated targets. They are not delivered work and not a promise that all 
 
 
 ---
+
+## 15. Amendment — 28 November 2026: coach presence (body doubling, screen-share tutoring and companion features)
+
+> **Dated:** 28 November 2026. **Owner request:** Amit Levin. **Status:** requirements only, nothing built, nothing Verified. Earlier sections stay as written; this section extends F-35, F-36, F-55, F-90, F-100 and F-101 and moves only the horizons it names.
+> **Status words:** as in §13 and §14. Every horizon in the table below is a proposed placement, marked `[EXTRAPOLATED]`, for Amit to confirm.
+> **Where the ideas come from:** a feature-level review of the public store listings of one AI-companion app (Animates, by Animation Inc.), in our own words, plus the MIT-licensed OpenAmika harness as a code reference. Details and the licence notes are in [`docs/research/companion-presence-2026-11-28.md`](./research/companion-presence-2026-11-28.md). No text, art or assets from either product are used.
+
+**Verdict.** The coach should feel present, not only answer. The big new mode is **body doubling**: the coach keeps the user company while they work, notices drift, and checks in gently. The same opt-in screen view lets the coach **tutor** on whatever is on screen. Around it sit an animated coach avatar, warmer real-time voice, a coach that reflects between sessions, a daily journal entry, and the user's other tools reached over MCP through Executor. Tempo stays a coach, not a companion romance app: none of this adds adult content, and the crisis rules are unchanged.
+
+### 15.1 Requirements
+
+| ID | Requirement | Horizon | Extends |
+|---|---|---|---|
+| R-11 | **Body-doubling mode.** The user starts a work session and the coach "sits with" them by voice or text. With opt-in screen sharing, the coach can see whether they are on task. It notices drift or being stuck, checks in at a gentle pace in the user's own accepted wording (the F-60 rule: no stock copy, no emoji), offers the 10-second action when stuck (F-25), and celebrates a finish, with quiet and reduced-motion options (R-01). Without screen sharing it still works on a timer plus check-ins. | MVP without screen view; Gen 1 with screen view `[EXTRAPOLATED]` | F-25, F-36, F-60 |
+| R-12 | **Screen-share tutoring.** With the user's permission the coach sees the worksheet, page or app on screen and explains it step by step. Anything learned can become flashcards or a quiz block (F-28) and feeds the study track (F-90, StudyFetch parity). It never does graded work for the user unasked; the user decides how much help to get. | Gen 1 `[EXTRAPOLATED]` | F-36, F-28, F-90 |
+| R-13 | **Animated coach avatar.** Tempo's own coach character, drawn in the browser, with expressions that follow the emotion of each reply and a calm idle state. It sits in the header slot planned in F-81. Animations follow the reduced-motion setting and never loop a regular rhythm. Tempo never uses another product's character, voice or art. | MVP `[EXTRAPOLATED]` | F-81 |
+| R-14 | **Warmer real-time voice.** The coach's voice carries emotional range (calm, warm, upbeat), within the dial set in HARD_RULES §6.5. Push-to-talk is offered beside hands-free (F-35), plus echo cancellation and microphone sensitivity, so the coach never hears itself and cuts itself off. | MVP, with voice billing `[EXTRAPOLATED]` | F-30, F-35 |
+| R-15 | **Coach reflects between sessions.** A scheduled pass over memory (the F-55 reflect step) lets the coach open the next session with something relevant ("yesterday the hard part was starting; want the 10-second version?"). It only uses memories the user can see and delete. | MVP `[EXTRAPOLATED]` | F-55, F-47 |
+| R-16 | **Daily journal entry.** At the end of a day with activity, the coach drafts a short journal entry from the day's pages, tasks and chats. The user can edit, keep or discard it. Kept entries go through the auto-tag memory like any other page. | MVP `[EXTRAPOLATED]` | F-50, F-55 |
+| R-17 | **Same coach over messengers.** The user can text the same coach thread from Telegram or Discord: same memory, same conversation. Messages follow the RAM-only scanner rule (HARD_RULES §6.4). | Gen 2+ (already listed in §4.12) | §4.12 |
+| R-18 | **Coach reaches the user's other tools over MCP.** Through the person's own Executor account (F-100; `docs/research/EXECUTOR-IN-TEMPO.md`), the coach can read from and lightly act in the user's other tools during a body-doubling or planning session. Every external write is confirmed (F-131). | Gen 1 (as F-100) | F-100, F-101 |
+
+### 15.2 Privacy and safety for the screen view
+
+- Screen sharing is **off by default** and starts only when the user presses Share. A visible indicator shows it is on, and one tap stops it. It never starts on its own and never runs while the tab is hidden `[EXTRAPOLATED]`.
+- Frames are processed in memory and are **not stored** unless the user saves a snapshot to a page. This follows the RAM-only rule (HARD_RULES §6.4). Whether that rule's scanner audit already covers screen frames is **UNKNOWN**: it was written for imported messages.
+- Screen frames count as sensitive data. They go only to a model service that has passed gate G-1 (R-09). Until one has, screen view is tested with synthetic screens only.
+- The learning switch (R-10) never includes screen frames unless a later decision says so. **UNKNOWN.**
+- The crisis card (F-24) and escalation rules (§2) are unchanged and take priority over every mode here.
+
+### 15.3 Code reference: OpenAmika
+
+- OpenAmika (`github.com/zeekk0/OpenAmika`) is an open-source companion harness. Its own code is MIT, so it may be adapted with its copyright notice kept (HARD_RULES §3). Its character, voice, art and model files belong to their owner under a personal-use licence and are **never** used.
+- What it shows: a browser avatar on PixiJS with pixi-live2d-display, a speech-to-text → model → emotion-tagged speech loop (its authors claim about 900 ms per reply), memory search by keyword plus meaning, an on-screen "eyes" vision step, MCP tools, and Telegram and Discord bridges.
+- **Licence gate:** its avatar runtime (Live2D Cubism Core) is proprietary, not MIT. Whether it fits Tempo's BSL 1.1 → Apache 2.0 path (HARD_RULES §3) is **UNKNOWN** until its licence is read. A VRM-based avatar is a possible fallback, also **UNKNOWN** until checked. One of its optional helpers is GPL-3.0; Tempo does not depend on it.
+
+### 15.4 Open questions for Amit
+
+1. Do the horizons in 15.1 match your plan (body doubling without screen view at MVP, with screen view at Gen 1)?
+2. Which runtime vision model reads the screen, and on which service that can pass G-1? **UNKNOWN.**
+3. Avatar runtime: Live2D (licence UNKNOWN) or VRM (UNKNOWN)?
+4. Does screen view and tutoring sit on every plan, or only on the higher voice plan?
+5. Default check-in pace during body doubling, and who sets it: the user, the dial, or both?
+
+### 15.5 Sources
+
+- Animates store listings: Apple App Store (`apps.apple.com/us/app/animates-life-companions/id6758621319`) and Google Play (`inc.animation.animate`), read 28 Nov 2026. Review-only items are labelled user-reported in the research note.
+- OpenAmika repository README and its MekaHime product page, read 28 Nov 2026.
+- Owner request, 28 Nov 2026.
