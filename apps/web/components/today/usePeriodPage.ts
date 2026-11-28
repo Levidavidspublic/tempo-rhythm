@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useAccountLanguage } from "@/components/providers/useAccountLanguage";
 import { api } from "@/convex/_generated/api";
+import { usePeriodPageForDate } from "@/lib/data/notes/use-period-page-for-date";
 import { type PeriodKind, periodPageDraft } from "@/lib/period-pages";
 
 /** Starter templates the dated pages are made from on first open (convex/lib/templateCatalog.ts). */
@@ -34,8 +35,11 @@ export function usePeriodPage(kind: PeriodKind, date: string | null): PeriodPage
   // notes.* call requireUser: wait for the users row (getProfile is null until it exists).
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const ready = isAuthenticated && profile != null && date !== null;
-  const page = useQuery(api.notes.getPeriodPage, ready ? { pageType: kind, date } : "skip");
-  const template = useQuery(api.templates.get, ready && page === null ? { templateId: TEMPLATE_FOR[kind] } : "skip");
+  const page = usePeriodPageForDate(ready ? { pageType: kind, date } : "skip");
+  const template = useQuery(
+    api.templates.get,
+    ready && page === null ? { templateId: TEMPLATE_FOR[kind] } : "skip"
+  );
   const ensure = useMutation(api.notes.ensurePeriodPage);
   const asked = useRef<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
@@ -56,10 +60,20 @@ export function usePeriodPage(kind: PeriodKind, date: string | null): PeriodPage
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: attempt is the Retry trigger
   useEffect(() => {
-    if (!ready || !settled || page !== null || template === undefined || asked.current === key || gone) return;
+    if (
+      !ready ||
+      !settled ||
+      page !== null ||
+      template === undefined ||
+      asked.current === key ||
+      gone
+    )
+      return;
     asked.current = key;
     const draft = periodPageDraft(kind, date, template?.body ?? "", lang);
-    ensure({ pageType: kind, date, title: draft.title, body: draft.body }).catch(() => setFailed(key));
+    ensure({ pageType: kind, date, title: draft.title, body: draft.body }).catch(() =>
+      setFailed(key)
+    );
   }, [ready, settled, page, template, key, kind, date, lang, ensure, gone, attempt]);
 
   if (!isLoading && !isAuthenticated) return { status: "signed-out" };
