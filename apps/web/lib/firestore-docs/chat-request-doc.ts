@@ -142,5 +142,11 @@ export function checkChatRequestDoc(input: unknown): CheckResult {
 }
 
 export function softDeleteChatRequest(doc: ChatRequestDoc, nowMs: number): ChatRequestDoc {
+  if (!isSafeNonnegativeInteger(nowMs) || nowMs < doc.createdAt) {
+    throw new RangeError(
+      "Deletion timestamp must be a safe nonnegative integer not earlier than createdAt"
+    );
+  }
+
   return { ...doc, deletedAt: nowMs, updatedAt: nowMs };
 }

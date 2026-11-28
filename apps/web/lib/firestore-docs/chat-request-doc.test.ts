@@ -64,4 +64,10 @@ describe("chat request documents", () => {
       updatedAt: 300,
     });
   });
+
+  test("soft delete rejects a deletion timestamp before createdAt", () => {
+    expect(() => softDeleteChatRequest(validRequest, 99)).toThrow(
+      "Deletion timestamp must be a safe nonnegative integer not earlier than createdAt"
+    );
+  });
 });
