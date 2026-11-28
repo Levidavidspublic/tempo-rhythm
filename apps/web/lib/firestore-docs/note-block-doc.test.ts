@@ -57,4 +57,10 @@ describe("note block documents", () => {
     expect(deleted.updatedAt).toBe(200);
     expect("data" in deleted && deleted.data).toEqual(task.data);
   });
+  test("soft delete does not set timestamps before createdAt", () => {
+    const deleted = softDeleteNoteBlock(task as NoteBlockDoc, 50);
+    expect(deleted.deletedAt).toBe(task.createdAt);
+    expect(deleted.updatedAt).toBe(task.createdAt);
+    expect(checkNoteBlockDoc(deleted).ok).toBe(true);
+  });
 });
