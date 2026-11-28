@@ -65,6 +65,22 @@ describe("coach web search documents", () => {
     });
   });
 
+  test("soft delete keeps timestamps at or after createdAt when the clock moves backward", () => {
+    const doc: CoachWebSearchDoc = {
+      utcDateKey: "2026-11-19",
+      createdAt: 20,
+      updatedAt: 20,
+    };
+    const deleted = softDeleteCoachWebSearch(doc, 10);
+
+    expect(deleted).toEqual({
+      ...doc,
+      deletedAt: 20,
+      updatedAt: 20,
+    });
+    expect(checkCoachWebSearchDoc(deleted).ok).toBe(true);
+  });
+
   test("countSearchesOn counts only the requested day and skips soft-deleted records", () => {
     const docs: CoachWebSearchDoc[] = [
       { utcDateKey: "2026-11-19", createdAt: 1, updatedAt: 1 },
