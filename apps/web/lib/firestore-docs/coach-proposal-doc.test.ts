@@ -35,6 +35,10 @@ describe("checkCoachProposalDoc", () => {
     expect(checkCoachProposalDoc({ ...pending, userId: "user-1" }).ok).toBe(false);
   });
 
+  test("refuses a proposal with an empty-string key", () => {
+    expect(checkCoachProposalDoc({ ...pending, "": 1 }).ok).toBe(false);
+  });
+
   test("refuses status applied", () => {
     expect(checkCoachProposalDoc({ ...pending, status: "applied" }).ok).toBe(false);
   });
