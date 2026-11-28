@@ -105,3 +105,17 @@ An outside memory engine (EverOS, Mega Memory; the port allows it later) · Jev 
 | 20 Sep: review gate not chosen; "factory on" waits for it | 1–2 Oct: Greptile. 3 Oct 15:25: Bugbot replaces Greptile, set up after the org move. Automations wait for PLAN-FINAL step 7 gates. |
 | 20 Sep P-1: deploy in the 18:00 window | Live deploys are Amit's, no fixed window stated. |
 | 1–2 Oct: router dispatches on the `ready` label | 3 Oct: router = GitHub-side automation using GitHub's own inference (Copilot plan); built but off until step 7. |
+
+## 8. Coach presence placement (added 28 Nov 2026)
+
+Serves [PRD](./PRD.md) §15 and [TRD](./TRD.md) §5e. Every placement below is **(EXTRAPOLATED)**, for Amit to confirm. Nothing is built.
+
+| Feature (PRD §15) | Phase it joins | Exit check | First three ticket titles |
+|---|---|---|---|
+| R-13 animated coach avatar · R-14 warmer voice, push-to-talk, echo cancellation | **P4** Voice | one spoken English turn where the avatar's expression matches the reply's emotion tag, and push-to-talk works with no self-interruption | emotion tag on coach replies · avatar component (behind the runtime licence decision) · push-to-talk + mic constraints |
+| R-11 body doubling (timer + check-ins, no screen view) · R-15 reflection · R-16 daily journal | **P3a** Coach, memory, pacing, nags | a 25-minute session with two check-ins in the user's own phrases; next day the coach opens with a reflection the user can delete; a journal draft can be kept or discarded | body-doubling session record + check-in job · reflect-opening job · end-of-day journal draft job |
+| R-11 screen view · R-12 screen-share tutoring | **P5** Study track (screen view gated on G-1) | with synthetic screens only: Share starts with an indicator, Stop ends it, no frame is stored, and a worksheet explanation turns into a flashcard block | screen-share capture + indicator (RAM-only) · vision observation → coach thread · tutoring answer → F-28 flashcards |
+| R-18 tools over MCP via Executor | **P3b** Connectors | as P3b, plus one confirmed external write during a body-doubling session | (uses the P3b Executor tickets) |
+| R-17 Telegram / Discord bridges | Parked (Gen 2+, §6) | — | — |
+
+Gates before these phases run: the avatar runtime licence (Live2D vs VRM, UNKNOWN), a G-1-cleared vision service for screen view (UNKNOWN), and the InsForge backend migration (`docs/backlog/INSFORGE-MIGRATION-PLAN.md`).
