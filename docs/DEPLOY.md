@@ -128,3 +128,87 @@ You asked for one click, so the merge needs no approval. If you ever want a conf
 | `RELEASE_HEALTH_URL` | repo variable, optional | health URL | not set (www.tempoflow.dev/api/health) |
 
 `deploy-live.yml` skips master pushes made by this workflow (commit trailer `Release-Workflow: release.yml`). That way one release never deploys twice.
+
+## Hostinger bundle (not a deploy)
+
+This does not deploy Tempo, and it does not change tempoflow.dev DNS. Scout or Grok Bot cut over only after a site is live. Do not push the tarball or `dist/hostinger` to any branch, and do not create a deploy branch.
+
+Hostinger cannot install with Bun (docs checked 2026-11-27: package managers are npm, yarn, and pnpm). The repo stays on Bun. Bun builds a Next.js `output: "standalone"` folder, and Hostinger runs that folder as a Node.js app.
+
+### Build
+
+From the repo root, with Bun 1.3.9. Set the build-time names below first. The script prints names only, never values. It refuses to build if an e2e bypass name is `1`.
+
+```bash
+bun scripts/build-standalone.ts
+```
+
+That runs `bun run --filter=tempo-rhythm-web build` (the app's own build script) and writes:
+
+- `dist/hostinger/` — the folder to upload
+- `dist/hostinger.tgz` — the same folder as an archive
+
+`server.js` at the folder root is the entry. When Next nests the real server under `apps/web/server.js` (monorepo tracing root), the root `server.js` starts that file and passes `PORT` through. `.next/static` and `public` sit next to the real server, not only at the folder root. Traced `node_modules` are included. `package.json` has `"start": "node server.js"` and `"engines": { "node": "24" }`.
+
+### Upload
+
+Hostinger docs (2026-11-27): Node 18, 20, 22 (default), and 24. Upload a `.zip`, `.tar`, `.tar.gz`, or `.tgz` (hPanel: Websites → Add Website → Node.js web app → Upload your files). Or use the API upload URL, then start a build.
+
+Set the app like this. Do not use the Next.js preset.
+
+| Field | Value |
+|---|---|
+| Application type | `other` |
+| Node.js version | 24 (matches the local proof; 22 is Hostinger's default) |
+| Entry file | `server.js` |
+| Build command | empty |
+| Output directory | empty (ignored for `other` when an entry file is set) |
+| Package manager | leave npm; the bundle is already built |
+
+The Next.js preset ignores the entry file and builds the repo itself with npm, yarn, or pnpm. That cannot install this repo. Do not point Hostinger at a git branch of this repo for that reason.
+
+`PORT` is how Hostinger tells the process which port to bind. Next's standalone server reads it. Do not hardcode a port.
+
+The bundle's root `package.json` has `"start": "node server.js"` and `"engines": { "node": "24" }`. It does not list the traced packages. Those files are already in `node_modules`.
+
+### Env names
+
+Build-time names are baked into the client bundle by `next build`. Set them in the environment of the Bun build, before `bun scripts/build-standalone.ts`. A placeholder local proof is not a production bundle. Runtime names are read by the Node process. Hostinger injects env at build and at runtime, but this upload has no Hostinger build, so build-time names must already be in the archive.
+
+Build-time (`NEXT_PUBLIC_*`, required by the script):
+
+- `NEXT_PUBLIC_CONVEX_URL`
+- `NEXT_PUBLIC_DATA_BACKEND`
+- `NEXT_PUBLIC_ENABLE_PASSKEYS`
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_INSFORGE_ANON_KEY`
+- `NEXT_PUBLIC_INSFORGE_URL`
+- `NEXT_PUBLIC_POLAR_MONTHLY_PRODUCT_ID`
+- `NEXT_PUBLIC_POLAR_YEARLY_PRODUCT_ID`
+- `NEXT_PUBLIC_PRIVACY_URL`
+- `NEXT_PUBLIC_TERMS_URL`
+
+Runtime (server only, names the web app reads):
+
+- `POLAR_ACCESS_TOKEN`
+- `POLAR_SUCCESS_URL`
+- `WHOP_WEBHOOK_SECRET`
+- `TEMPO_SURFACE` — set `app` for the full app. If unset and `VERCEL_ENV` is `production`, the surface is coming-soon and `/sign-in` is 404.
+- `PORT` — Hostinger sets this. Do not set it yourself unless you are proving the bundle locally.
+
+Never set on the bundle or on Hostinger:
+
+- `TEMPO_E2E_AUTH_BYPASS`
+- `NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS`
+- `TEMPO_E2E_PUBLIC_CALENDAR`
+- `CONVEX_DEPLOY_KEY`
+- `VERCEL_ENV=production` (that selects the coming-soon surface)
+
+### Not done
+
+No Hostinger upload. No DNS change for tempoflow.dev. No production env values in this repo. Whether Hostinger's install step deletes a prebuilt `node_modules` when the build command is empty: UNKNOWN. The root `package.json` does not list those packages, so an install cannot restore them. Confirm that on the first real upload before relying on this bundle.
