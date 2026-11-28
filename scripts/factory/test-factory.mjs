@@ -354,10 +354,9 @@ t("release date uses Asia/Jerusalem", () => {
   assert.equal(isReleaseTitle("Release notes"), false);
 });
 t("release body lists PRs without a closing keyword", () => {
-  assert.deepEqual(
-    prNumbersFromMessage("feat(tasks): add a card (#482)\n\nbody mentions #9"),
-    [482]
-  );
+  assert.deepEqual(prNumbersFromMessage("feat(tasks): add a card (#482)\n\nbody mentions #9"), [
+    482,
+  ]);
   assert.deepEqual(prNumbersFromMessage("Merge pull request #12 from org/branch"), [12]);
   assert.deepEqual(prNumbersFromMessage("see #12 in the body only"), []);
   const body = renderReleaseBody({
