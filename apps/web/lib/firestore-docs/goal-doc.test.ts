@@ -58,7 +58,7 @@ describe("goal documents", () => {
     expect(restored.updatedAt).toBe(1_700_000_000_300);
   });
 
-  test("a prototype title is copied onto the returned record", () => {
+  test("a prototype title is rejected", () => {
     const inherited = { title: "Ship the note", description: "Keep it short" };
     const goalOnPrototype = Object.create(inherited);
     Object.assign(goalOnPrototype, {
@@ -67,10 +67,7 @@ describe("goal documents", () => {
       createdAt: 1,
       updatedAt: 2,
     });
-    const checked = checkGoalDoc(goalOnPrototype);
-    expect(checked.ok).toBe(true);
-    if (!checked.ok) return;
-    expect(Object.hasOwn(checked.doc, "title")).toBe(true);
-    expect(softDeleteGoal(checked.doc, 3).title).toBe("Ship the note");
+    expect(checkGoalDoc(goalOnPrototype).ok).toBe(false);
+    expect(checkGoalDoc(goal).ok).toBe(true);
   });
 });

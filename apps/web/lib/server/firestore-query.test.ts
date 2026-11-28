@@ -144,3 +144,17 @@ test("refuses a range filter ordered by a different field", () => {
     }).body.structuredQuery.orderBy
   ).toEqual([{ field: { fieldPath: "score" }, direction: "ASCENDING" }]);
 });
+
+test("keeps an orderBy that names one of several range fields", () => {
+  expect(
+    buildListQuery({
+      uid: "owner1",
+      collection: "tasks",
+      filters: [
+        { field: "salary", op: ">", value: 100000 },
+        { field: "experience", op: ">", value: 0 },
+      ],
+      orderBy: { field: "salary", direction: "asc" },
+    }).body.structuredQuery.orderBy
+  ).toEqual([{ field: { fieldPath: "salary" }, direction: "ASCENDING" }]);
+});

@@ -34,6 +34,19 @@ export function checkGoalDoc(input: unknown): GoalDocCheck {
     }
 
     const value = input as Record<string, unknown>;
+    const inherited = [
+      "title",
+      "description",
+      "targetDate",
+      "progressPercent",
+      "status",
+      "createdAt",
+      "updatedAt",
+      "deletedAt",
+    ].find((key) => !Object.hasOwn(value, key) && value[key] !== undefined);
+    if (inherited !== undefined) {
+      return { ok: false, reason: `goal fields must be own properties: ${inherited}` };
+    }
     const unknownKey = Object.keys(value).find((key) => !GOAL_DOC_KEYS.has(key));
     if (unknownKey !== undefined) {
       return { ok: false, reason: `unknown key: ${unknownKey}` };

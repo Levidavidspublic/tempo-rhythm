@@ -110,7 +110,7 @@ export function buildListQuery(request: ListRequest): {
   const rangeFields = filters.filter((filter) => filter.op !== "==").map((filter) => filter.field);
   if (request.orderBy) {
     validateField(request.orderBy.field);
-    if (rangeFields.some((field) => field !== request.orderBy?.field)) {
+    if (rangeFields.length > 0 && !rangeFields.includes(request.orderBy.field)) {
       throw new FirestoreQueryError("The range-filter field must be the orderBy field");
     }
     structuredQuery.orderBy = [
