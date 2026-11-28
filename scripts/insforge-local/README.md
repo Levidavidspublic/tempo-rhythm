@@ -35,9 +35,12 @@ on the command line. A missing default migrations or fixtures directory is an
 empty set, which lets the runner work before the first migration lands.
 
 Name migrations with a leading timestamp. The runner visits `*.sql` in
-bytewise filename order and applies each migration in one transaction. The
-summary counts migration and fixture files; any failed step exits non-zero.
-This harness is not wired into CI yet.
+bytewise filename order and applies each migration in one transaction as
+`project_admin`, matching the current user of the InsForge Cloud migration
+path. It installs the stub as `postgres`, sets the migration role inside
+each transaction, then seeds users and runs fixtures in separate `postgres`
+sessions. The summary counts migration and fixture files; any failed step
+exits non-zero. This harness is not wired into CI yet.
 
 ## Fixture contract
 
@@ -50,16 +53,39 @@ independent. To exercise RLS, use `set local role authenticated;` and set
 call `auth.uid()` or read a setting populated outside the block, since psql
 doesn't expand variables inside it. Raise an exception on any failed assertion.
 
-## Grant assumption
+## Migration role and grants
 
-InsForge OSS `deploy/docker-init/db/db-init.sql` grants both `anon` and
-`authenticated` CRUD on new public tables. The stub applies those defaults
-to tables created by the runner; RLS, rather than a missing table grant,
-rejects writes and hides rows when there is no matching policy. The stub
-mirrors the auth and realtime objects used by the fixtures and models
-`project_admin` with `BYPASSRLS` instead of the OSS admin-policy event triggers.
-The managed project's actual grants and SDK behavior are **UNKNOWN** until P07.
-This runner does not model InsForge Auth API or WebSocket delivery.
+On the managed `tempo-flow` project, measurements for P50 confirmed that
+`project_admin` is the current user of both the migration and strict raw
+SQL paths (`postgres` is the session user). It owns its created tables,
+has `BYPASSRLS`, is not a superuser, cannot create roles, and has no role
+memberships. Measured object privileges:
+
+- `CREATE` on the database and `public`; `USAGE`, but not `CREATE`, on
+  `auth` and `realtime`.
+- `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `TRIGGER` and `REFERENCES` on
+  `auth.users`, including `REFERENCES` on `id`.
+- `SELECT`, `INSERT`, `UPDATE` and `DELETE` on `realtime.channels`;
+  `SELECT` and `INSERT` on `realtime.messages`.
+- `EXECUTE` on `realtime.publish(text, text, jsonb)`,
+  `realtime.channel_name()` and `auth.uid()`. `gen_random_uuid()` is
+  available.
+
+In Cloud, a superuser owns both realtime tables. The strict raw-SQL path
+still allowed enabling RLS as `project_admin`, and migration 02 created the
+owner-channel policy there. Stock PostgreSQL requires ownership for those
+statements, so the stub makes `project_admin` the owner of the two realtime
+tables. It removes the implicit owner table privileges and explicitly
+grants back only the measured permissions; the local ownership is a DDL
+emulation, not an assertion about Cloud ownership.
+
+The stub preserves the InsForge OSS fixture convention of granting both
+`anon` and `authenticated` CRUD on new public tables, with default privileges
+set for the role that now creates those tables. RLS rejects writes and hides
+rows when there is no matching policy. Unlike a superuser, `project_admin`
+is subject to object privileges, including any removed from itself by a
+migration. The local harness does not model the Auth API, SDK behavior, or
+WebSocket delivery.
 
 ## Third-party license
 

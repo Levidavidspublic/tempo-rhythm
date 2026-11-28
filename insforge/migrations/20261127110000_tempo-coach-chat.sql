@@ -37,7 +37,7 @@ create index messages_user_conversation_created_idx
 alter table public.conversations enable row level security;
 alter table public.messages enable row level security;
 
-revoke all on public.conversations, public.messages from public, anon, authenticated, project_admin;
+revoke all on public.conversations, public.messages from public, anon, authenticated;
 grant select on public.conversations, public.messages to authenticated;
 grant insert (id, user_id, title, technique, created_at, updated_at) on public.conversations to authenticated;
 grant update (title, technique, updated_at, deleted_at) on public.conversations to authenticated;
