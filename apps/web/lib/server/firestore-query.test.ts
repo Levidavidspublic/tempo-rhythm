@@ -74,6 +74,28 @@ describe("Firestore list query builder", () => {
     });
   });
 
+  test("requires ordering to start with the inequality filter field", () => {
+    const base = {
+      uid: "owner1",
+      collection: "tasks",
+      filters: [{ field: "priority", op: ">=" as const, value: 2 }],
+    };
+
+    expect(() =>
+      buildListQuery({
+        ...base,
+        orderBy: { field: "title", direction: "asc" },
+      })
+    ).toThrow(FirestoreQueryError);
+
+    expect(
+      buildListQuery({
+        ...base,
+        orderBy: { field: "priority", direction: "asc" },
+      }).body.structuredQuery.orderBy
+    ).toEqual([{ field: { fieldPath: "priority" }, direction: "ASCENDING" }]);
+  });
+
   test("refuses unsafe owner and collection segments", () => {
     for (const request of [
       { uid: "two/owners", collection: "tasks" },
