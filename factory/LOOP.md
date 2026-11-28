@@ -26,11 +26,7 @@ never reviews them; only the batch PR (`batch/<loop-id>` → integration) gets t
   (release PRs); the default branch `integration` is reviewed automatically. Component PRs target `batch/<loop-id>`,
   so CodeRabbit never auto-reviews them — only the batch PR (`batch/<loop-id>` → integration) is reviewed.
 - Review gate (merge-gate #1315): clean = no `CHANGES_REQUESTED` on the head; rate-limit or 30 min timeout → Opus
-  fallback (already in #1315). The fallback does not run while `MERGE_GATE_ENABLED` is unset: the coderabbit job is
-  skipped (`if: vars.MERGE_GATE_ENABLED == 'true'`), so the downstream fallback job does not run. Do not wait for an
-  automatic fallback in that case. Fix loop `factory-review-fix` → lane, max 3 rounds (`review-fix:1..3`), then `blocked:amit`.
-  The workflow event filter that starts that loop is still `.github/workflows/factory-review-fix.yml` and stays unchanged
-  until Amit authorizes a `.github/**` edit. The script consumer reads CodeRabbit.
+  fallback (already in #1315). Fix loop `factory-review-fix` → lane, max 3 rounds (`review-fix:1..3`), then `blocked:amit`.
 
 ## Guards
 - **scope-guard rule h**: a component PR that changes `convex/**` fails unless it has the `convex-arch` label added by

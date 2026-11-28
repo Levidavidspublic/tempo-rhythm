@@ -49,8 +49,7 @@ export async function summary(lines) {
 // "Closes #12", "fixes #3", "Resolved: #7" ... same-repo references only.
 export function linkedTickets(body) {
   const re = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b\s*:?\s+#(\d+)\b/gi;
-  const numbers = [...(body || "").matchAll(re)].map((m) => Number(m[1]));
-  return [...new Set(numbers.filter((n) => Number.isSafeInteger(n) && n > 0))];
+  return [...new Set([...(body || "").matchAll(re)].map((m) => Number(m[1])))];
 }
 
 // Promotion PR = Amit's integration -> live-branch PR.

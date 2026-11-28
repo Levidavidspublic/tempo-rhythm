@@ -11,14 +11,14 @@
 import { gh, repoParts, summary, linkedTickets } from "./gh-api.mjs";
 import { labelNames, addLabels, comment, frontMatter, scopeOf } from "./factory-lib.mjs";
 import { isBatchPR, inFolders } from "./scope-guard.mjs";
-import { fetchCoderabbit, findingsNote } from "./review-gate.mjs";
+import { fetchBugbot, findingsNote } from "./review-gate.mjs";
 
 export function nextStep({ state, labels }) {
   const tries = [1, 2, 3].filter((n) => labels.includes(`review-fix:${n}`)).length;
   if (labels.includes("blocked:amit")) return { action: "none", why: "blocked:amit" };
-  if (state === "blocked") return { action: "block", why: "CodeRabbit couldn't run on this PR" };
-  if (state !== "findings") return { action: "none", why: `CodeRabbit ${state}` };
-  if (tries >= 3) return { action: "block", why: "3 CodeRabbit fix attempts used" };
+  if (state === "blocked") return { action: "block", why: "Bugbot couldn't run on this PR" };
+  if (state !== "findings") return { action: "none", why: `Bugbot ${state}` };
+  if (tries >= 3) return { action: "block", why: "3 Bugbot fix attempts used" };
   return { action: "fix", attempt: tries + 1 };
 }
 
@@ -40,9 +40,9 @@ async function main() {
   const { owner, repo } = repoParts();
   const n = Number(process.env.PR_NUMBER);
   const dry = process.env.DRY_RUN === "1";
-  const r = await fetchCoderabbit(owner, repo, n);
+  const r = await fetchBugbot(owner, repo, n);
   const labels = labelNames(r.pr);
-  const lines = [`## review-fix #${n}`, `CodeRabbit: ${r.state} — ${r.detail}`];
+  const lines = [`## review-fix #${n}`, `Bugbot: ${r.state} — ${r.detail}`];
   if (!isFactoryPr(r.pr, labels)) { lines.push("Not a factory PR → nothing."); return summary(lines); }
   const step = nextStep({ state: r.state, labels });
   lines.push(`Next: ${step.action}${step.attempt ? ` (attempt ${step.attempt}/3)` : ""} — ${step.why || ""}`);
@@ -75,7 +75,7 @@ async function main() {
     }
   } else if (step.action === "block" && !dry) {
     await addLabels(owner, repo, n, ["blocked:amit"]);
-    await comment(owner, repo, n, `Factory review gate: ${step.why}. Labelled blocked:amit.`);
+    await comment(owner, repo, n, `Factory review gate: ${step.why}. Labelled blocked:amit.${r.state === "blocked" ? " Bugbot reviews bot-authored PRs only when a Cursor team covers this repo." : ""}`);
   }
   return summary(lines);
 }
