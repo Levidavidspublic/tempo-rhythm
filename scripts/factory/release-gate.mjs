@@ -13,6 +13,7 @@
 //              commit status (a skipped success does not pass) and posts "@coderabbitai review" once
 //              when that SHA has no completed review. Findings = gate fails.
 //   verdict    collects the gate jobs. Any failure -> label `blocked:amit` + comment. No auto-fix on release.
+//              A skipped review passes only when this run's skip_code_review input is set (with a reason).
 //   pr-ready   waits until GitHub says the release PR is mergeable (required checks green, not behind/dirty).
 //   convex-key checks CONVEX_DEPLOY_KEY_LIVE targets prod:precious-wildcat-890 (value never printed).
 //   ship       merges the PR pinned to SHA X, checks master's tree == X's tree, waits for the Vercel
@@ -20,6 +21,7 @@
 //              reports the new master commit. Comments the result on the PR. Never rolls back (DEPLOY.md).
 // Env: GH_TOKEN (FACTORY_BATCH_TOKEN if set, else github.token), USER_TOKEN_SET=true|false, GITHUB_REPOSITORY,
 //      RELEASE_SHA, MASTER_SHA, PR_NUMBER, DRY_RUN, RUN_URL, MERGE_METHOD, PROD_ENVIRONMENT, HEALTH_URL.
+//      Per-run workflow inputs (not repo settings): SKIP_CODE_REVIEW, SKIP_REASON. TRIGGERING_ACTOR is the clicker.
 // R15: writes (PR, comments, labels, merge) only with the user token, never GITHUB_TOKEN.
 import { execFileSync } from "node:child_process";
 import { appendFileSync } from "node:fs";
@@ -83,6 +85,52 @@ export function preflightBlockers(f) {
   }
   if (!f.userToken) out.push("secret FACTORY_BATCH_TOKEN (Division6066 user token) is not set: the release PR, Bugbot request and merge can't be done (R15: never GITHUB_TOKEN).");
   return out;
+}
+
+// Per-run choice from workflow_dispatch (skip_code_review / skip_reason). Not a repo variable.
+// An empty reason is a hard preflight stop, including a dry run.
+export function skipReviewChoice(skip, reason) {
+  const on = truthy(skip);
+  const text = String(reason ?? "").trim();
+  if (!on) return { skip: false, reason: "", error: "" };
+  if (!text) return { skip: true, reason: "", error: "skip_code_review is true but skip_reason is empty. Write why this release skips the code review, then run again." };
+  return { skip: true, reason: text, error: "" };
+}
+
+// One prefix, and never a blank reason. Repeated "CodeRabbit couldn't review:" with nothing after it falls back.
+export function reviewBlockLine(prefix, detail, fallback = "Release stopped: no reason given.") {
+  const p = String(prefix || "").trim();
+  const fb = String(fallback || "").trim() || "Release stopped: no reason given.";
+  let rest = String(detail || "").replace(/\s+/g, " ").trim();
+  const plow = p.toLowerCase();
+  if (plow) {
+    let guard = 0;
+    while (rest.toLowerCase().startsWith(plow) && guard++ < 5) rest = rest.slice(p.length).replace(/^[\s:.-]+/, "").trim();
+  }
+  if (!rest) return fb;
+  return p ? `${p}: ${rest}` : rest;
+}
+
+// Owner skip passes only the code-review job, and only when that job's result is "skipped".
+// Any other skipped or failed job, including a review skipped without this input, still fails.
+export function judgeGate({ results, skipCodeReview, skipReason, actor }) {
+  const choice = skipReviewChoice(skipCodeReview, skipReason);
+  const entries = Object.entries(results || {});
+  const review = entries.filter(([k]) => /^code review\b/i.test(k));
+  const ownerSkip = choice.skip && !choice.error && review.length > 0 && review.every(([, v]) => v === "skipped");
+  const bad = entries.filter(([k, v]) => {
+    if (v === "success") return false;
+    if (ownerSkip && /^code review\b/i.test(k) && v === "skipped") return false;
+    return true;
+  });
+  const who = String(actor || "").trim() || "UNKNOWN";
+  return {
+    ok: bad.length === 0 && !choice.error,
+    bad,
+    ownerSkip,
+    choiceError: choice.error,
+    note: ownerSkip ? `Code review skipped by ${who}: ${choice.reason}` : "",
+  };
 }
 
 // GitHub mergeable_state -> what ship should do.
@@ -160,6 +208,11 @@ export async function block(o, r, n, lines) {
 }
 
 async function preflight(o, r) {
+  const choice = skipReviewChoice(process.env.SKIP_CODE_REVIEW, process.env.SKIP_REASON);
+  if (choice.error) {
+    await say([`::error::${choice.error}`]);
+    process.exit(1);
+  }
   const x = process.env.RELEASE_SHA;
   const dry = truthy(process.env.DRY_RUN);
   const userToken = truthy(process.env.USER_TOKEN_SET);
@@ -196,6 +249,7 @@ async function preflight(o, r) {
     `- Convex functions changed since master: ${convexChanged ? "yes (prod Convex deploy runs after the gate)" : "no (no Convex deploy)"}`,
     `- Merge method: ${method} (allowed on master: ${allowed ? allowed.join(", ") || "none" : "UNKNOWN with this token"})`,
     `- Release token (FACTORY_BATCH_TOKEN): ${userToken ? "set" : "MISSING"}`,
+    `- Code review: ${choice.skip ? `skipped this run by owner (${choice.reason})` : "required"}`,
     ...(blockers.length ? ["", `### ${dry ? "A real run would stop here" : "Stopped before the gate"} (${blockers.length})`, ...blockers.map((b) => `- ${b}`)] : ["- No blockers for the merge."]),
   ]);
   if (blockers.length && !dry) process.exit(1);
@@ -255,7 +309,11 @@ async function bugbot(o, r) {
       out("detail", s.detail);
       return block(o, r, n, [`Bugbot found problems on \`${short(x)}\`: ${s.detail}.`, ...reviewFindings(s)]).then(() => process.exit(1));
     }
-    if (s.state === "blocked") { out("detail", s.detail); return block(o, r, n, [`Bugbot couldn't review: ${s.detail}`]).then(() => process.exit(1)); }
+    if (s.state === "blocked") {
+      const line = reviewBlockLine("Bugbot couldn't review", s.detail, "Bugbot couldn't review: no reason given.");
+      out("detail", line);
+      return block(o, r, n, [line]).then(() => process.exit(1));
+    }
     if (!requested) {
       const head = await gh(`/repos/${o}/${r}/commits/${x}`);
       const runs = await ghAll(`/repos/${o}/${r}/commits/${x}/check-runs`, (j) => j.check_runs);
@@ -291,7 +349,11 @@ async function coderabbitReview(o, r) {
       return block(o, r, n, [`CodeRabbit found problems on \`${short(x)}\`: ${s.detail}.`, ...reviewFindings(s)]).then(() => process.exit(1));
     }
     const skipped = /review skipped/i.test(s.detail || "");
-    if (s.state === "blocked" && !skipped) { out("detail", s.detail); return block(o, r, n, [`CodeRabbit couldn't review: ${s.detail}`]).then(() => process.exit(1)); }
+    if (s.state === "blocked" && !skipped) {
+      const line = reviewBlockLine("CodeRabbit couldn't review", s.detail, "CodeRabbit couldn't review: no reason given.");
+      out("detail", line);
+      return block(o, r, n, [line]).then(() => process.exit(1));
+    }
     // No completed review yet: ask once. A pending status means CodeRabbit is already reviewing, so don't ask again.
     const inFlight = s.status?.state === "pending";
     if (!requested && !isCoderabbitCompletedStatus(s.status) && !inFlight) {
@@ -302,27 +364,37 @@ async function coderabbitReview(o, r) {
     if (Date.now() >= deadline) break;
     await sleep(30_000);
   }
-  const why = /review skipped/i.test(last)
-    ? `CodeRabbit review was skipped for \`${short(x)}\` and did not finish within ${minutes} min. A skipped review does not pass the gate.`
-    : `CodeRabbit gave no completed review for \`${short(x)}\` within ${minutes} min.`;
-  return block(o, r, n, [why, last]).then(() => process.exit(1));
+  const reason = reviewBlockLine("CodeRabbit", last, /review skipped/i.test(last) ? "CodeRabbit review skipped: no reason given." : "CodeRabbit gave no reason.");
+  const why = /review skipped/i.test(last) || /review skipped/i.test(reason)
+    ? `CodeRabbit review was skipped for \`${short(x)}\` and did not finish within ${minutes} min. A skipped review does not pass the gate. ${reason}`
+    : `CodeRabbit gave no completed review for \`${short(x)}\` within ${minutes} min. ${reason}`;
+  return block(o, r, n, [why]).then(() => process.exit(1));
 }
 
 async function codeReview(o, r) {
   const kind = reviewKind();
   if (kind === "coderabbit") return coderabbitReview(o, r);
   if (kind === "bugbot") return bugbot(o, r);
-  return block(o, r, Number(process.env.PR_NUMBER), [`REVIEWER must be bugbot or coderabbit (got "${process.env.REVIEWER}").`]).then(() => process.exit(1));
+  const got = String(process.env.REVIEWER ?? "").trim();
+  return block(o, r, Number(process.env.PR_NUMBER), [reviewBlockLine("REVIEWER must be bugbot or coderabbit", got ? `got "${got}"` : "", "REVIEWER must be bugbot or coderabbit: no value given.")]).then(() => process.exit(1));
 }
 
 async function verdict(o, r) {
   const n = Number(process.env.PR_NUMBER || 0);
   const results = JSON.parse(process.env.RESULTS || "{}");
-  const bad = Object.entries(results).filter(([, v]) => v !== "success");
+  const judged = judgeGate({
+    results,
+    skipCodeReview: process.env.SKIP_CODE_REVIEW,
+    skipReason: process.env.SKIP_REASON,
+    actor: process.env.TRIGGERING_ACTOR,
+  });
   const dry = truthy(process.env.DRY_RUN);
-  const lines = Object.entries(results).map(([k, v]) => `- ${k}: ${v}`);
-  if (bad.length) {
-    // Bugbot / PR jobs already commented their own detail; this adds the overall table once.
+  const lines = Object.entries(results).map(([k, v]) => `- ${k}: ${v === "" || v == null ? "Release stopped: no result reported." : v}`);
+  if (!lines.length) lines.push("- Release stopped: no gate results were reported.");
+  if (judged.choiceError) lines.unshift(judged.choiceError);
+  if (judged.note) lines.unshift(judged.note);
+  if (!judged.ok) {
+    // Review jobs already commented their own detail; this adds the overall table once, with a reason on every row.
     await block(o, r, n, [`Gate failed on \`${short(process.env.RELEASE_SHA)}\`:`, ...lines]);
     process.exit(1);
   }
@@ -331,7 +403,7 @@ async function verdict(o, r) {
     ? [`### Dry run: release gate GREEN on \`${short(process.env.RELEASE_SHA)}\``, ...lines, "", `Not merged (dry run). Convex prod deploy would run: ${process.env.CONVEX_CHANGED === "true" ? "yes" : "no"}. Merge method: ${process.env.MERGE_METHOD}.`, pre ? `A real run would stop at preflight: ${pre} blocker(s) (see the preflight summary).` : "A real run would merge now.", `Run: ${process.env.RUN_URL}`]
     : [`### Release gate GREEN on \`${short(process.env.RELEASE_SHA)}\``, ...lines, "", "Merging next."];
   await say(text);
-  if (n && truthy(process.env.USER_TOKEN_SET) && dry) await comment(o, r, n, text.join("\n"));
+  if (n && truthy(process.env.USER_TOKEN_SET) && (dry || judged.note)) await comment(o, r, n, text.join("\n"));
 }
 
 async function prReady(o, r) {

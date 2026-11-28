@@ -8,6 +8,7 @@ import {
   checkResults,
   dispatchOutcome,
   goVerdict,
+  RELEASE_DISPATCH_INPUTS,
   isGo,
   latestCandidate,
   parseCandidate,
@@ -211,6 +212,10 @@ describe("release-go: candidate comment", () => {
     expect(dispatchOutcome({ ambiguous: [{ id: 1, head_sha: NEWER }, { id: 2, head_sha: NEWER }] }, SHA)).toEqual({ result: "ambiguous", cancel: null });
     expect(dispatchOutcome({ run: { id: 7, head_sha: SHA } }, SHA)).toEqual({ result: "started", cancel: null });
     expect(dispatchOutcome({ run: { id: 7, head_sha: NEWER } }, SHA)).toEqual({ result: "mismatch", cancel: 7 });
+  });
+
+  test("go dispatches the release with code review on (skip defaults off)", () => {
+    expect(RELEASE_DISPATCH_INPUTS).toEqual({ dry_run: "false", skip_code_review: "false", skip_reason: "" });
   });
 
   test("candidate run must be a release-go candidate run on that SHA", () => {
