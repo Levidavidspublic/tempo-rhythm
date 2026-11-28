@@ -369,11 +369,13 @@ select pg_catalog.set_config('request.jwt.claims', '{"role":"anon"}', true);
 do $$
 begin
   begin
-    if exists (select from public.notifications) then raise exception 'Anonymous inbox reads must be denied'; end if;
+    perform 1 from public.notifications;
+    raise exception 'Anonymous inbox reads must be denied';
   exception when sqlstate '42501' then null;
   end;
   begin
-    if exists (select from public.user_preferences) then raise exception 'Anonymous preference reads must be denied'; end if;
+    perform 1 from public.user_preferences;
+    raise exception 'Anonymous preference reads must be denied';
   exception when sqlstate '42501' then null;
   end;
   begin

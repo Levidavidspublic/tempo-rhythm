@@ -17,6 +17,7 @@ create table public.day_plans (
   deleted_at bigint,
   legacy_convex_id text unique,
   constraint day_plans_user_id_id_key unique (user_id, id),
+  constraint day_plans_user_id_id_local_date_key unique (user_id, id, local_date),
   constraint day_plans_top_task_ids_check check (
     case when top_task_ids is null or pg_catalog.cardinality(top_task_ids) = 0 then true
       when pg_catalog.array_ndims(top_task_ids) = 1 and pg_catalog.array_lower(top_task_ids, 1) = 1 then
@@ -52,7 +53,7 @@ create table public.time_blocks (
   updated_at bigint not null,
   deleted_at bigint,
   legacy_convex_id text unique,
-  foreign key (user_id, day_plan_id) references public.day_plans (user_id, id),
+  foreign key (user_id, day_plan_id, local_date) references public.day_plans (user_id, id, local_date),
   foreign key (user_id, task_id) references public.tasks (user_id, id),
   foreign key (user_id, habit_id) references public.habits (user_id, id)
 );

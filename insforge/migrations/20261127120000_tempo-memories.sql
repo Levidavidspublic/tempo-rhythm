@@ -3,7 +3,10 @@
 create table public.memories (
   id uuid primary key default pg_catalog.gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  content text not null check (pg_catalog.length(pg_catalog.btrim(content)) between 1 and 2000),
+  content text not null check (
+    content ~ '[^[:space:]]'
+    and pg_catalog.length(pg_catalog.btrim(content)) between 1 and 2000
+  ),
   sector text not null check (sector in ('semantic', 'episodic', 'procedural', 'emotional', 'general')),
   salience double precision not null check (salience >= 0 and salience < 'Infinity'::double precision),
   decay_rate double precision not null check (decay_rate >= 0 and decay_rate < 'Infinity'::double precision),

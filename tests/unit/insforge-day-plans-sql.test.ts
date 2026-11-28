@@ -20,11 +20,13 @@ describe("canonical day plans and time blocks migration", () => {
   });
 
   test("puts the owner first in every parent foreign key", () => {
-    expect(sql.match(/foreign key \([^)]*\) references public\.\w+ \([^)]*\)/gi)).toEqual([
+    const foreignKey = /foreign\s+key\s*\([^)]*\)\s*references\s+public\.\w+\s*\([^)]*\)/gi;
+    const foreignKeys = (sql.match(foreignKey) ?? []).map((key) => key.replace(/\s+/g, " "));
+    expect(foreignKeys).toEqual([
       "foreign key (user_id, top_task_1_id) references public.tasks (user_id, id)",
       "foreign key (user_id, top_task_2_id) references public.tasks (user_id, id)",
       "foreign key (user_id, top_task_3_id) references public.tasks (user_id, id)",
-      "foreign key (user_id, day_plan_id) references public.day_plans (user_id, id)",
+      "foreign key (user_id, day_plan_id, local_date) references public.day_plans (user_id, id, local_date)",
       "foreign key (user_id, task_id) references public.tasks (user_id, id)",
       "foreign key (user_id, habit_id) references public.habits (user_id, id)",
     ]);

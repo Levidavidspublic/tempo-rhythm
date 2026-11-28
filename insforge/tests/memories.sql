@@ -31,9 +31,17 @@ declare
   owner_row constant uuid := '00000000-0000-4000-8000-000000003930';
   other_id constant uuid := current_setting('tempo_test.other_id')::uuid;
 begin
+  begin
+    insert into public.memories (user_id, content, sector, salience, decay_rate, last_accessed,
+      access_count, created_at, updated_at)
+    values (auth.uid(), E'\t\n', 'general', 0.5, 0.01, 1000, 0, 1000, 1000);
+    raise exception 'A whitespace-only memory was accepted';
+  exception when sqlstate '23514' then null;
+  end;
+
   insert into public.memories (id, user_id, content, sector, salience, decay_rate, last_accessed,
     access_count, source, imported_at, created_at, updated_at)
-  values (owner_row, auth.uid(), 'Reviewed memory', 'semantic', 0.5, 0.01, 1000, 0,
+  values (owner_row, auth.uid(), E'Reviewed\nmemory', 'semantic', 0.5, 0.01, 1000, 0,
     'claude', 1000, 1000, 1000);
 
   if (select count(*) from public.memories) <> 1 or not exists (

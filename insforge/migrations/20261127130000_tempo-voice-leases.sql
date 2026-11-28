@@ -33,6 +33,7 @@ create table public.voice_leases (
       and ended_at is not null and duration_ms is not null and end_reason is not null
       and ended_at between started_at and expires_at
       and ended_at <= updated_at
+      and last_renewal_at <= ended_at
       and duration_ms = ended_at - started_at
     )
   )

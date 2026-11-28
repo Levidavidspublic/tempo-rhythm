@@ -39,7 +39,7 @@ begin
   returning id into lease_id;
 
   select expires_at into strict expiry_ms from public.voice_leases where id = lease_id;
-  if expiry_ms <> started_ms + 45000 then
+  if expiry_ms is distinct from started_ms + 45000 then
     raise exception 'Q85: initial expiry must allow 45 seconds without a heartbeat';
   end if;
 
@@ -92,9 +92,20 @@ begin
         updated_at = started_ms + heartbeat * 15000
     where id = lease_id returning expires_at into strict expiry_ms;
   end loop;
-  if expiry_ms <> started_ms + 900000 then
+  if expiry_ms is distinct from started_ms + 900000 then
     raise exception 'Q85: a late heartbeat extended expiry past the session cap';
   end if;
+
+  begin
+    update public.voice_leases
+    set status = 'ended', end_reason = 'stopped', ended_at = started_ms,
+        duration_ms = 0, updated_at = started_ms + 885000
+    where id = lease_id;
+    raise exception 'Q85: an end before the last renewal was accepted';
+  exception when sqlstate '23514' then
+    get stacked diagnostics failed_constraint = constraint_name;
+    if failed_constraint <> 'voice_leases_end_state' then raise; end if;
+  end;
 
   begin
     update public.voice_leases set status = 'ended' where id = lease_id;

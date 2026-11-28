@@ -87,6 +87,11 @@ begin
     end;
   end loop;
   begin
+    update public.time_blocks set local_date = date '2026-11-28' where id = block_id;
+    raise exception 'Time block kept a plan from another date';
+  exception when sqlstate '23503' then null;
+  end;
+  begin
     insert into public.day_plans (user_id, local_date, status, created_at, updated_at)
     values (auth.uid(), date '2026-11-27', 'draft', 1, 1);
     raise exception 'Owner created two live plans for the same date';
@@ -138,11 +143,17 @@ select set_config('request.jwt.claims', jsonb_build_object('sub', :'other_id', '
 do $$
 declare
   owner_id constant uuid := current_setting('tempo_test.owner_id')::uuid;
+  relation text;
 begin
+  foreach relation in array array['day_plans', 'time_blocks'] loop
+    perform set_config('realtime.channel_name', relation || ':' || owner_id::text, true);
+    if exists (select 1 from realtime.channels) then
+      raise exception 'Another account can subscribe to %', relation;
+    end if;
+  end loop;
   if exists (select 1 from public.day_plans where user_id = owner_id)
-    or exists (select 1 from public.time_blocks where user_id = owner_id)
-    or exists (select 1 from realtime.channels) then
-    raise exception 'Another account can read the owner rows or channel';
+    or exists (select 1 from public.time_blocks where user_id = owner_id) then
+    raise exception 'Another account can read the owner rows';
   end if;
   update public.day_plans set intention = 'Denied' where user_id = owner_id;
   if found then raise exception 'Another account could update the owner plan'; end if;
@@ -190,9 +201,11 @@ begin
     ('time_blocks', '24000000-0000-4000-8000-000000000031'::uuid)
   ) as changes(table_name, row_id) loop
     if (select count(*) from realtime.messages
-        where channel_name = expected.table_name || ':' || current_setting('tempo_test.owner_id')
-          and sender_type = 'system' and event_name = 'INSERT'
-          and payload = jsonb_build_object('table', expected.table_name, 'op', 'INSERT', 'id', expected.row_id)) <> 1
+        where channel_name = expected.table_name || ':' || current_setting('tempo_test.owner_id')) <> 3
+      or (select count(*) from realtime.messages
+          where channel_name = expected.table_name || ':' || current_setting('tempo_test.owner_id')
+            and sender_type = 'system' and event_name = 'INSERT'
+            and payload = jsonb_build_object('table', expected.table_name, 'op', 'INSERT', 'id', expected.row_id)) <> 1
       or (select count(*) from realtime.messages
           where channel_name = expected.table_name || ':' || current_setting('tempo_test.owner_id')
             and sender_type = 'system' and event_name = 'UPDATE'
