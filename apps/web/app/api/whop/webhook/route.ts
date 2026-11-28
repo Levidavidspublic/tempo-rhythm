@@ -2,7 +2,12 @@ import { createDocument, FirestoreError, type FirestoreFields } from "@/lib/serv
 import { GcpAuthError, readGcpConfig } from "@/lib/server/gcp-access-token";
 import { logServerProblem } from "@/lib/server/log";
 import { readBodyLimited } from "@/lib/server/read-body";
-import { mapWhopEvent, membershipEventsCollection, verifyWhopSignature } from "@/lib/whop-webhook";
+import {
+  isConfiguredWhopPlan,
+  mapWhopEvent,
+  membershipEventsCollection,
+  verifyWhopSignature,
+} from "@/lib/whop-webhook";
 
 /**
  * POST /api/whop/webhook — Whop tells us when a membership (the $1 trial) starts or changes.
@@ -32,7 +37,8 @@ function reply(
 /** Handles one Whop delivery: checks the signature, then stores the membership event. */
 export async function POST(request: Request): Promise<Response> {
   const secret = process.env.WHOP_WEBHOOK_SECRET;
-  if (!secret) {
+  const planId = process.env.WHOP_PLAN_ID;
+  if (!secret || !planId?.trim()) {
     return reply({ received: false, reason: "not_configured" }, 503);
   }
   const raw = await readBodyLimited(request, MAX_BODY_BYTES);
@@ -57,6 +63,11 @@ export async function POST(request: Request): Promise<Response> {
   const event = mapWhopEvent(body, headers);
   if (!event) {
     return reply({ received: true, handled: false }, 200);
+  }
+  // The secret covers every webhook from the Whop company. Store only the Tempo plan configured
+  // for this deployment; acknowledge unrelated events so Whop does not retry them forever.
+  if (!isConfiguredWhopPlan(event, planId)) {
+    return reply({ received: true, handled: false, reason: "unconfigured_plan" }, 200);
   }
 
   const config = readGcpConfig();

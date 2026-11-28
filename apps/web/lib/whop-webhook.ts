@@ -115,6 +115,21 @@ export type MembershipEvent = {
   cancelAtPeriodEnd: boolean;
 };
 
+/**
+ * True only for events belonging to the one plan this deployment is allowed to sell.
+ *
+ * A webhook secret authenticates the Whop company, not a particular product. A company can have
+ * other plans, so a valid signature alone must not let those memberships enter Tempo's payment
+ * records. Events without a plan are also kept out because they cannot be attributed safely.
+ */
+export function isConfiguredWhopPlan(
+  event: Pick<MembershipEvent, "planId">,
+  configuredPlanId: string
+): boolean {
+  const planId = configuredPlanId.trim();
+  return planId !== "" && event.planId === planId;
+}
+
 /** Where one event is stored: `whopMemberships/{membershipId}/events/{eventId}`. */
 export function membershipEventsCollection(membershipId: string): string {
   return `${WHOP_MEMBERSHIP_COLLECTION}/${membershipId}/events`;
