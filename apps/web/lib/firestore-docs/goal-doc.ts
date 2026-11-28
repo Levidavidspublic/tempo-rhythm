@@ -67,7 +67,17 @@ export function checkGoalDoc(input: unknown): GoalDocCheck {
       return { ok: false, reason: "deletedAt must be finite" };
     }
 
-    return { ok: true, doc: value as GoalDoc };
+    const doc: GoalDoc = {
+      title: value.title,
+      progressPercent: value.progressPercent,
+      status: value.status,
+      createdAt: value.createdAt,
+      updatedAt: value.updatedAt,
+    };
+    if (value.description !== undefined) doc.description = value.description;
+    if (value.targetDate !== undefined) doc.targetDate = value.targetDate;
+    if (value.deletedAt !== undefined) doc.deletedAt = value.deletedAt;
+    return { ok: true, doc };
   } catch {
     return { ok: false, reason: "goal could not be checked" };
   }

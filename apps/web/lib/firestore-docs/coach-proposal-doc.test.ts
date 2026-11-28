@@ -56,3 +56,12 @@ describe("checkCoachProposalDoc", () => {
     ).toBe(false);
   });
 });
+
+test("refuses an empty unexpected key", () => {
+  expect(checkCoachProposalDoc({ ...pending, "": true }).ok).toBe(false);
+});
+
+test("refuses a sparse taskIds array", () => {
+  const sparse = new Array(1);
+  expect(checkCoachProposalDoc({ ...pending, taskIds: sparse }).ok).toBe(false);
+});

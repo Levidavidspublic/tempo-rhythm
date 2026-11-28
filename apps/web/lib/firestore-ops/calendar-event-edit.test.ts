@@ -69,3 +69,11 @@ describe("planCalendarEventEdit", () => {
     expect(stored).toEqual(before);
   });
 });
+
+test("an invalid stored document is refused even when the edit is empty", () => {
+  const invalid = { ...STORED_EVENT, createdAt: -1 };
+  expect(planCalendarEventEdit(invalid, {}, 300)).toEqual({
+    kind: "refused",
+    reason: "event could not be checked",
+  });
+});

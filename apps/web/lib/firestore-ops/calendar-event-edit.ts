@@ -1,4 +1,4 @@
-import { parseCalendarEventDoc, type CalendarEventDoc } from "../firestore-docs/calendar-doc";
+import { type CalendarEventDoc, parseCalendarEventDoc } from "../firestore-docs/calendar-doc";
 
 export type CalendarEventEdit = {
   title?: string;
@@ -38,15 +38,13 @@ export function planCalendarEventEdit(
     if (edit.startsAtMs !== stored.startsAtMs) patch.startsAtMs = edit.startsAtMs;
   }
 
-  if (Object.keys(patch).length === 0) return { kind: "unchanged" };
-
-  patch.updatedAt = now;
-
+  const withStamp = Object.keys(patch).length === 0 ? patch : { ...patch, updatedAt: now };
   try {
-    parseCalendarEventDoc({ ...stored, ...patch });
+    parseCalendarEventDoc({ ...stored, ...withStamp });
   } catch {
     return { kind: "refused", reason: "event could not be checked" };
   }
+  if (Object.keys(patch).length === 0) return { kind: "unchanged" };
 
-  return { kind: "patch", patch, fields: Object.keys(patch).sort() };
+  return { kind: "patch", patch: withStamp, fields: Object.keys(withStamp).sort() };
 }

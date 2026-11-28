@@ -58,3 +58,19 @@ describe("Firestore transaction request builders", () => {
     expect(() => buildRollback(projectId, "bad-id")).toThrow(FirestoreTransactionError);
   });
 });
+
+test("rejects a transaction id that cannot encode a byte", () => {
+  expect(() => readTransactionId({ transaction: "A" })).toThrow(FirestoreTransactionError);
+  expect(() => buildRollback(projectId, "A===")).toThrow(FirestoreTransactionError);
+  expect(readTransactionId({ transaction: "YQ" })).toBe("YQ");
+  expect(readTransactionId({ transaction: "YQ==" })).toBe("YQ==");
+});
+
+test("rejects a malformed retryOf before building the request", () => {
+  expect(() => buildBeginTransaction(projectId, { retryOf: "bad-id" })).toThrow(
+    FirestoreTransactionError
+  );
+  expect(() => buildBeginTransaction(projectId, { retryOf: "" })).toThrow(
+    FirestoreTransactionError
+  );
+});

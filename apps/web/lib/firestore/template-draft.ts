@@ -18,7 +18,13 @@ export function draftTemplate(
       return { kind: "refused", reason: "name must be a string" };
     }
 
-    const name = Array.from(input.name.trim()).slice(0, TEMPLATE_NAME_MAX).join("").trim();
+    const trimmedName = input.name.trim();
+    let nameEnd = Math.min(trimmedName.length, TEMPLATE_NAME_MAX);
+    if (nameEnd > 0 && nameEnd < trimmedName.length) {
+      const cut = trimmedName.charCodeAt(nameEnd - 1);
+      if (cut >= 0xd800 && cut <= 0xdbff) nameEnd -= 1;
+    }
+    const name = trimmedName.slice(0, nameEnd).trim();
     if (name.length === 0) return { kind: "refused", reason: "name must not be empty" };
     if (typeof input.body !== "string") {
       return { kind: "refused", reason: "body must be a string" };

@@ -30,7 +30,13 @@ const FIELD_NAME = /^[A-Za-z][A-Za-z0-9_]*$/;
 const RESERVED_ID = /^__.*__$/;
 
 function validateSegment(value: string, label: string): void {
-  if (value.length === 0 || value.includes("/") || RESERVED_ID.test(value)) {
+  if (
+    value.length === 0 ||
+    value.includes("/") ||
+    value === "." ||
+    value === ".." ||
+    RESERVED_ID.test(value)
+  ) {
     throw new FirestoreQueryError(`Invalid ${label}`);
   }
 }
@@ -101,8 +107,12 @@ export function buildListQuery(request: ListRequest): {
     };
   }
 
+  const rangeFields = filters.filter((filter) => filter.op !== "==").map((filter) => filter.field);
   if (request.orderBy) {
     validateField(request.orderBy.field);
+    if (rangeFields.some((field) => field !== request.orderBy?.field)) {
+      throw new FirestoreQueryError("The range-filter field must be the orderBy field");
+    }
     structuredQuery.orderBy = [
       {
         field: { fieldPath: request.orderBy.field },

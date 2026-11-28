@@ -13,4 +13,6 @@ export function makeUseSafeNote(useQueryImpl: typeof useQuery<typeof api.notes.g
   };
 }
 
-export const useSafeNote = makeUseSafeNote(useQuery);
+export function useSafeNote(args: GetSafeArgs | "skip"): GetSafeResult | undefined {
+  return useQuery(api.notes.getSafe, args);
+}

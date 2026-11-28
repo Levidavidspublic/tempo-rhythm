@@ -47,3 +47,10 @@ describe("useSafeNote", () => {
     expect(source).not.toContain("api.notes.getSafe");
   });
 });
+
+test("useSafeNote calls useQuery at call time instead of capturing it at load", () => {
+  const source = readFileSync(new URL("./use-safe-note.ts", import.meta.url), "utf8");
+  expect(source).not.toContain("makeUseSafeNote(useQuery)");
+  expect(source).toContain("export function useSafeNote");
+  expect(source).toContain("return useQuery(api.notes.getSafe, args)");
+});

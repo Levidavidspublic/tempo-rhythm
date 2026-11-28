@@ -64,3 +64,12 @@ test("does not add a deletion timestamp", () => {
   expect(result.kind).toBe("draft");
   if (result.kind === "draft") expect(result.doc).not.toHaveProperty("deletedAt");
 });
+
+test("clips a name on UTF-16 code units without splitting an emoji", () => {
+  const name = `${"a".repeat(119)}😀`;
+  const result = draftTemplate({ name, body: "Text" }, 10);
+  expect(result.kind).toBe("draft");
+  if (result.kind !== "draft") return;
+  expect(result.doc.name.length).toBeLessThanOrEqual(120);
+  expect(result.doc.name).toBe("a".repeat(119));
+});

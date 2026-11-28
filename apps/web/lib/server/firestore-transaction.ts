@@ -16,8 +16,19 @@ function transactionUrl(projectId: string, operation: "beginTransaction" | "roll
   return `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:${operation}`;
 }
 
+function isStructuredTransactionId(value: string): boolean {
+  if (!TRANSACTION_ID.test(value)) return false;
+  const pad = value.endsWith("==") ? 2 : value.endsWith("=") ? 1 : 0;
+  const body = value.slice(0, value.length - pad);
+  if (body.includes("=")) return false;
+  if (value.length % 4 === 1) return false;
+  if (pad === 1 && body.length % 4 !== 3) return false;
+  if (pad === 2 && body.length % 4 !== 2) return false;
+  return true;
+}
+
 function validateTransactionId(transaction: unknown): asserts transaction is string {
-  if (typeof transaction !== "string" || !TRANSACTION_ID.test(transaction)) {
+  if (typeof transaction !== "string" || !isStructuredTransactionId(transaction)) {
     throw new FirestoreTransactionError("Invalid transaction id");
   }
 }
@@ -40,6 +51,7 @@ export function buildBeginTransaction(
     return { url, body: { options: { readOnly: {} } } };
   }
 
+  if (options.retryOf !== undefined) validateTransactionId(options.retryOf);
   const readWrite = options.retryOf === undefined ? {} : { retryTransaction: options.retryOf };
   return { url, body: { options: { readWrite } } };
 }
