@@ -1,7 +1,7 @@
 "use client";
 
 import { isLinkableTitle, parseTempoBlocks, sameTitle, titleKey } from "@tempo/utils";
-import { useConvex, useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useConvex, useConvexAuth, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -18,6 +18,7 @@ import { useRegisterCoachPage } from "@/components/coach/CoachPage";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
+import { useCreateNote } from "@/lib/data/notes/use-create-note";
 import {
   closesPageMenu,
   exportContents,
@@ -78,7 +79,8 @@ type Props = {
 /** Tags from the page's page-meta block (the only place tags live, NT-05). */
 function pageTags(body: string): string[] {
   for (const segment of parseTempoBlocks(body)) {
-    if (segment.kind === "valid" && segment.block.type === "page-meta") return segment.block.data.tags;
+    if (segment.kind === "valid" && segment.block.type === "page-meta")
+      return segment.block.data.tags;
   }
   return [];
 }
@@ -94,7 +96,7 @@ export function PageEditorView(props: Props) {
   const router = useRouter();
   const convex = useConvex();
   const { isAuthenticated } = useConvexAuth();
-  const createNote = useMutation(api.notes.create);
+  const createNote = useCreateNote();
   const backlinks = useQuery(api.notes.backlinks, isAuthenticated ? { noteId } : "skip");
   // The coach panel beside this page reads it as context.
   useRegisterCoachPage(noteId);
@@ -145,16 +147,15 @@ export function PageEditorView(props: Props) {
   const open = trigger && trigger.from !== dismissedAt ? trigger : null;
   const wikiResults = useQuery(
     api.notes.searchTitles,
-    isAuthenticated && open?.kind === "wiki" ? { query: open.query, limit: 8 } : "skip",
+    isAuthenticated && open?.kind === "wiki" ? { query: open.query, limit: 8 } : "skip"
   );
 
   const slashLabels = useMemo(
     () =>
-      Object.fromEntries(SLASH_COMMANDS.map((c) => [c.id, t(`slash.${c.id}` as MessageKey)])) as Record<
-        SlashCommandId,
-        string
-      >,
-    [t],
+      Object.fromEntries(
+        SLASH_COMMANDS.map((c) => [c.id, t(`slash.${c.id}` as MessageKey)])
+      ) as Record<SlashCommandId, string>,
+    [t]
   );
 
   const items: MenuItem[] = useMemo(() => {
@@ -265,7 +266,8 @@ export function PageEditorView(props: Props) {
       setMenuOpen(false);
       const from = event.target;
       const inMenu = from instanceof Node && (menuRoot.current?.contains(from) ?? false);
-      if (inMenu || from === document.body || from === document.documentElement) menuButton.current?.focus();
+      if (inMenu || from === document.body || from === document.documentElement)
+        menuButton.current?.focus();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -313,22 +315,37 @@ export function PageEditorView(props: Props) {
                 placeholder={t("page.untitled")}
                 // A title is one line: Enter doesn't add a line break, and pasted breaks become spaces.
                 onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.nativeEvent.isComposing) event.preventDefault();
+                  if (event.key === "Enter" && !event.nativeEvent.isComposing)
+                    event.preventDefault();
                 }}
-                onChange={(event) => props.onTitleChange(event.target.value.replace(/[\r\n]+/g, " "))}
+                onChange={(event) =>
+                  props.onTitleChange(event.target.value.replace(/[\r\n]+/g, " "))
+                }
               />
             </h1>
             <div className="tp-page-head__actions">
-              <button className="tp-btn tp-btn--secondary tp-btn--sm" type="button" onClick={props.onTogglePin}>
+              <button
+                className="tp-btn tp-btn--secondary tp-btn--sm"
+                type="button"
+                onClick={props.onTogglePin}
+              >
                 <TpIcon name="pin" size="sm" />
                 <span>{pinned ? t("page.unpin") : t("page.pin")}</span>
               </button>
               {confirmingDelete ? (
                 <>
-                  <button className="tp-btn tp-btn--secondary tp-btn--sm" type="button" onClick={props.onConfirmDelete}>
+                  <button
+                    className="tp-btn tp-btn--secondary tp-btn--sm"
+                    type="button"
+                    onClick={props.onConfirmDelete}
+                  >
                     {t("page.confirmDelete")}
                   </button>
-                  <button className="tp-btn tp-btn--ghost tp-btn--sm" type="button" onClick={props.onCancelDelete}>
+                  <button
+                    className="tp-btn tp-btn--ghost tp-btn--sm"
+                    type="button"
+                    onClick={props.onCancelDelete}
+                  >
                     {t("page.cancel")}
                   </button>
                 </>
@@ -347,11 +364,21 @@ export function PageEditorView(props: Props) {
                 </button>
                 {menuOpen ? (
                   <div className="tp-menu__list tp-glass" role="menu">
-                    <button className="tp-menu__item" type="button" role="menuitem" onClick={() => void copyMarkdown()}>
+                    <button
+                      className="tp-menu__item"
+                      type="button"
+                      role="menuitem"
+                      onClick={() => void copyMarkdown()}
+                    >
                       <TpIcon name="card" size="sm" />
                       {t("page.copy")}
                     </button>
-                    <button className="tp-menu__item" type="button" role="menuitem" onClick={exportMarkdown}>
+                    <button
+                      className="tp-menu__item"
+                      type="button"
+                      role="menuitem"
+                      onClick={exportMarkdown}
+                    >
                       <TpIcon name="download" size="sm" />
                       {t("page.export")}
                     </button>
@@ -399,7 +426,13 @@ export function PageEditorView(props: Props) {
               </Link>
             )}
             <output className="tp-muted" data-state={saveState}>
-              {copied ? t("page.copied") : saveState === "saving" ? t("page.saving") : saveState === "saved" ? t("page.saved") : ""}
+              {copied
+                ? t("page.copied")
+                : saveState === "saving"
+                  ? t("page.saving")
+                  : saveState === "saved"
+                    ? t("page.saved")
+                    : ""}
             </output>
           </div>
         </div>
@@ -420,7 +453,11 @@ export function PageEditorView(props: Props) {
               onOpenLink={(linkTitle) => void openLink(linkTitle)}
             />
           ) : (
-            <ReadView body={body} onOpenLink={(linkTitle) => void openLink(linkTitle)} labels={labels} />
+            <ReadView
+              body={body}
+              onOpenLink={(linkTitle) => void openLink(linkTitle)}
+              labels={labels}
+            />
           )}
           {open && mode === "edit" ? (
             <SlashMenu
