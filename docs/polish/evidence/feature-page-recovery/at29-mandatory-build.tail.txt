@@ -1,0 +1,19 @@
+tempo-rhythm-web:build: ├ ƒ /templates/builder
+tempo-rhythm-web:build: ├ ƒ /templates/editor/[id]
+tempo-rhythm-web:build: ├ ƒ /templates/run/[id]
+tempo-rhythm-web:build: ├ ƒ /templates/sketch
+tempo-rhythm-web:build: ├ ƒ /terms
+tempo-rhythm-web:build: ├ ƒ /today
+tempo-rhythm-web:build: ├ ƒ /tracking
+tempo-rhythm-web:build: ├ ƒ /week
+tempo-rhythm-web:build: └ ƒ /week/[week]
+tempo-rhythm-web:build:
+tempo-rhythm-web:build:
+tempo-rhythm-web:build: ƒ Proxy (Middleware)
+tempo-rhythm-web:build:
+tempo-rhythm-web:build: ƒ  (Dynamic)  server-rendered on demand
+tempo-rhythm-web:build:
+
+ Tasks:    1 successful, 1 total
+Cached:    0 cached, 1 total
+  Time:    3m27.37s

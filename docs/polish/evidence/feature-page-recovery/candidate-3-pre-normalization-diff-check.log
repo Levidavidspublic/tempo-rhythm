@@ -1,0 +1,44 @@
+docs/polish/evidence/feature-page-recovery/candidate-3-build.log:11: trailing whitespace.
++tempo-rhythm-web:build:
+docs/polish/evidence/feature-page-recovery/candidate-3-build.log:18: trailing whitespace.
++tempo-rhythm-web:build:   Generating static pages using 4 workers (15/62)
+docs/polish/evidence/feature-page-recovery/candidate-3-build.log:19: trailing whitespace.
++tempo-rhythm-web:build:   Generating static pages using 4 workers (30/62)
+docs/polish/evidence/feature-page-recovery/candidate-3-build.log:20: trailing whitespace.
++tempo-rhythm-web:build:   Generating static pages using 4 workers (46/62)
+docs/polish/evidence/feature-page-recovery/candidate-3-build.log:23: trailing whitespace.
++tempo-rhythm-web:build:
+docs/polish/evidence/feature-page-recovery/candidate-3-build.log:97: trailing whitespace.
++tempo-rhythm-web:build:
+docs/polish/evidence/feature-page-recovery/candidate-3-build.log:98: trailing whitespace.
++tempo-rhythm-web:build:
+docs/polish/evidence/feature-page-recovery/candidate-3-build.log:100: trailing whitespace.
++tempo-rhythm-web:build:
+docs/polish/evidence/feature-page-recovery/candidate-3-build.log:102: trailing whitespace.
++tempo-rhythm-web:build:
+docs/polish/evidence/feature-page-recovery/candidate-3-build.log:106: trailing whitespace.
++  Time:    2m22.134s
+docs/polish/evidence/feature-page-recovery/candidate-3-build.log:107: new blank line at EOF.
+docs/polish/evidence/feature-page-recovery/candidate-3-build.tail.txt:10: trailing whitespace.
++tempo-rhythm-web:build:
+docs/polish/evidence/feature-page-recovery/candidate-3-build.tail.txt:11: trailing whitespace.
++tempo-rhythm-web:build:
+docs/polish/evidence/feature-page-recovery/candidate-3-build.tail.txt:13: trailing whitespace.
++tempo-rhythm-web:build:
+docs/polish/evidence/feature-page-recovery/candidate-3-build.tail.txt:15: trailing whitespace.
++tempo-rhythm-web:build:
+docs/polish/evidence/feature-page-recovery/candidate-3-build.tail.txt:19: trailing whitespace.
++  Time:    2m22.134s
+docs/polish/evidence/feature-page-recovery/candidate-3-build.tail.txt:20: new blank line at EOF.
+docs/polish/evidence/feature-page-recovery/candidate-3-local-e2e.log:97: trailing whitespace.
++  1) [chromium] › tests/e2e/calendar-views.spec.ts:7:5 › event created in Day view appears in Week and Month views for that date
+docs/polish/evidence/feature-page-recovery/candidate-3-local-e2e.log:185: trailing whitespace.
++  3) [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+docs/polish/evidence/feature-page-recovery/candidate-3-local-e2e.log:252: trailing whitespace.
++    [chromium] › tests/e2e/calendar-views.spec.ts:7:5 › event created in Day view appears in Week and Month views for that date
+docs/polish/evidence/feature-page-recovery/candidate-3-local-e2e.log:254: trailing whitespace.
++    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+docs/polish/evidence/feature-page-recovery/candidate-3-local-e2e.tail.txt:16: trailing whitespace.
++    [chromium] › tests/e2e/calendar-views.spec.ts:7:5 › event created in Day view appears in Week and Month views for that date
+docs/polish/evidence/feature-page-recovery/candidate-3-local-e2e.tail.txt:18: trailing whitespace.
++    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record

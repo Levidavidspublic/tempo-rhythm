@@ -1,0 +1,10 @@
+bun test v1.3.9 (cf6cdbbb)
+
+../overnight/page-recovery-aba-diagnostic.test.tsx:
+{"source":"committed candidate 3","expectedFinalTitle":"A","submitted":["A","B"],"persistedTitle":"B","defectReproduced":true}
+(pass) ABA diagnostic only, not acceptance > records whether an older equal title clears the final unsaved edit [5279.89ms]
+
+ 1 pass
+ 0 fail
+ 4 expect() calls
+Ran 1 test across 1 file. [13.56s]

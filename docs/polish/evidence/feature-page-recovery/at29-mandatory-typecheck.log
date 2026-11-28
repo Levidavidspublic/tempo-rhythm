@@ -1,0 +1,21 @@
+$ turbo run typecheck
+• turbo 2.9.6
+
+   • Packages in scope: @tempo/config, @tempo/types, @tempo/ui, @tempo/utils, tempo-rhythm-mobile, tempo-rhythm-web
+   • Running typecheck in 6 packages
+   • Remote caching disabled
+
+@tempo/utils:typecheck: cache hit, replaying logs 69682310453edbda
+@tempo/utils:typecheck: $ tsc --noEmit
+@tempo/types:typecheck: cache hit, replaying logs c33422a84068a5ff
+@tempo/types:typecheck: $ tsc --noEmit
+@tempo/ui:typecheck: cache hit, replaying logs 7c20c58d265e9574
+@tempo/ui:typecheck: $ tsc --noEmit
+tempo-rhythm-web:typecheck: cache miss, executing c720c3c11825a7d5
+tempo-rhythm-mobile:typecheck: cache hit, replaying logs aff93a2c6be25276
+tempo-rhythm-mobile:typecheck: $ tsc --noEmit
+tempo-rhythm-web:typecheck: $ tsc --noEmit
+
+ Tasks:    5 successful, 5 total
+Cached:    4 cached, 5 total
+  Time:    1m26.81s

@@ -1,0 +1,14 @@
+Initial candidate-2 scoped lint: exit 1 (diagnostic excerpt retained from tool output).
+components/notes/NotesScreen.tsx:335:3 lint/correctness/useExhaustiveDependencies
+This hook does not specify its dependency on saveNow.
+This hook does not specify its dependency on saveSnapshot.
+This hook specifies more dependencies than necessary: noteId, updateNote.
+tests/unit/tempo-page-error-recovery.test.tsx:151:21 lint/style/useTemplate
+Template literals are preferred over string concatenation.
+tests/unit/tempo-page-error-recovery.test.tsx:386:21 lint/style/useTemplate
+Template literals are preferred over string concatenation.
+Checked 2 files in 703ms. No fixes applied.
+Found 3 errors.
+Found 2 infos.
+Some errors were emitted while running checks.
+Correction: ownership layout cleanup invokes a stable ref; no hook lint suppression. Both fixture string concatenations use template literals. Subsequent scoped lint passed.
