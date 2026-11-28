@@ -1,3 +1,5 @@
+> **Archived snapshot (28 Nov 2026).** Copied as-is for backup. Its relative links point to where files lived originally and may not resolve from this folder; open the live documents under `docs/`.
+
 # Tempo Flow: Roadmap
 
 > **Last updated 2026-10-03** (IDT) · Written by Grok Bot from the sources below · Decisions are Amit's.

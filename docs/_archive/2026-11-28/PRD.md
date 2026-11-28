@@ -1,3 +1,5 @@
+> **Archived snapshot (28 Nov 2026).** Copied as-is for backup. Its relative links point to where files lived originally and may not resolve from this folder; open the live documents under `docs/`.
+
 # Tempo Flow — PRD
 
 > **Version:** 5 Oct 2026. **Owner:** Amit Levin. Replaces the April verbatim copy of this file (Phase 06 Step 2).

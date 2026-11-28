@@ -1,3 +1,5 @@
+> **Archived snapshot (28 Nov 2026).** Copied as-is for backup. Its relative links point to where files lived originally and may not resolve from this folder; open the live documents under `docs/`.
+
 # Tempo Flow wiki
 
 Tempo Flow is an overwhelm-first AI daily planner and personal operating system for neurodivergent brains: it unifies tasks, notes, journal, calendar, habits, goals, and an accept/reject AI coach so the day feels workable instead of shaming. This `docs/wiki/` tree **is** the project wiki — `tempo-rhythm` has no GitHub Wiki tab requirement.

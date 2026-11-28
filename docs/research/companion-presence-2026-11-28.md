@@ -44,7 +44,7 @@ Source: the Apple App Store and Google Play listings, read 28 Nov 2026. The webs
 | Animates idea | Tempo version | PRD §15 |
 |---|---|---|
 | "Sits with you", presence | Body-doubling mode: timer, gentle check-ins in the user's own words, celebrate finishes | R-11 |
-| Watch together over screen share | Opt-in screen view for body doubling and tutoring, frames never stored | R-11, R-12 |
+| Watch together over screen share | Opt-in screen view for body doubling and tutoring; frames are not stored unless the user saves a snapshot to a page | R-11, R-12 |
 | Animated, emotional character | Tempo's own coach avatar, reduced-motion aware | R-13 |
 | Emotional real-time voice; self-interruption complaint | Emotion-tagged voice, push-to-talk, echo cancellation | R-14 |
 | Keeps thinking while the app is closed | Reflection pass; the coach opens with something relevant | R-15 |
