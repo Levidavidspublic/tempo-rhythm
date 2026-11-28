@@ -74,7 +74,8 @@ export function bugbotState({ headSha, checkRuns = [], threads = [], comments = 
   return { state: "pending", findings: [], detail: "no Bugbot result for the head commit yet" };
 }
 
-const REVIEW_THREADS_QUERY = `query($o:String!,$r:String!,$n:Int!,$c:String){repository(owner:$o,name:$r){pullRequest(number:$n){reviewThreads(first:100,after:$c){pageInfo{hasNextPage endCursor} nodes{isResolved isOutdated path line comments(first:1){nodes{author{login} body url}}}}}}}`;
+const REVIEW_THREADS_QUERY =
+  "query($o:String!,$r:String!,$n:Int!,$c:String){repository(owner:$o,name:$r){pullRequest(number:$n){reviewThreads(first:100,after:$c){pageInfo{hasNextPage endCursor} nodes{isResolved isOutdated path line comments(first:1){nodes{author{login} body url}}}}}}";
 
 export function mapReviewThread(t) {
   const c = t.comments.nodes[0] || {};

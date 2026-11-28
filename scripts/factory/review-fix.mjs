@@ -115,5 +115,5 @@ async function main() {
 if (import.meta.url === `file://${process.argv[1]}`)
   main().catch(async (e) => {
     await summary([`FAIL: ${e.message}`]);
-    process.exit(1);
+    process.exitCode = 1;
   });
