@@ -1,8 +1,8 @@
 import {
   COACH_SETTINGS_DEFAULTS,
+  type CoachSettingsDoc,
   CoachSettingsDocError,
   parseCoachSettingsDoc,
-  type CoachSettingsDoc,
 } from "../firestore-docs/coach-settings-doc";
 
 type CoachSettingsEdits = {
@@ -23,9 +23,27 @@ export function planCoachSettingsSave(
     return { ok: false as const, reason: "deleted" as const };
   }
 
+  if (stored !== null) {
+    try {
+      parseCoachSettingsDoc(stored);
+    } catch (error) {
+      if (error instanceof CoachSettingsDocError) {
+        return { ok: false as const, reason: "invalid" as const };
+      }
+      throw error;
+    }
+  }
+
+  const dial = Object.hasOwn(edits, "dial") ? edits.dial : undefined;
+  const taskLoad = Object.hasOwn(edits, "taskLoad") ? edits.taskLoad : undefined;
+  const snapshot = {
+    ...(dial !== undefined ? { dial } : {}),
+    ...(taskLoad !== undefined ? { taskLoad } : {}),
+  };
+
   const candidate = {
     ...(stored ?? COACH_SETTINGS_DEFAULTS),
-    ...edits,
+    ...snapshot,
     updatedAt: now,
   };
 
@@ -43,10 +61,8 @@ export function planCoachSettingsSave(
   }
 
   const patch: Partial<Pick<CoachSettingsDoc, "dial" | "taskLoad" | "updatedAt">> = {};
-  if (edits.dial !== undefined && edits.dial !== stored.dial) patch.dial = edits.dial;
-  if (edits.taskLoad !== undefined && edits.taskLoad !== stored.taskLoad) {
-    patch.taskLoad = edits.taskLoad;
-  }
+  if (dial !== undefined && dial !== stored.dial) patch.dial = dial;
+  if (taskLoad !== undefined && taskLoad !== stored.taskLoad) patch.taskLoad = taskLoad;
 
   if (Object.keys(patch).length === 0) {
     return { ok: false as const, reason: "no-change" as const };

@@ -66,7 +66,10 @@ const TIME_FIELDS = [
 ] as const satisfies readonly (keyof AccountGateDoc)[];
 
 function isValidEmail(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0 && value.includes("@");
+  if (typeof value !== "string") return false;
+  const trimmed = value.trim();
+  const at = trimmed.indexOf("@");
+  return at > 0 && at < trimmed.length - 1;
 }
 
 function isEpochMilliseconds(value: unknown): value is number {
@@ -148,6 +151,7 @@ export function validateAccountGateDoc(
 export function newAccountGate(email: string, now: number): AccountGateDoc {
   const cleanedEmail = email.trim().toLowerCase();
   if (!isValidEmail(cleanedEmail)) throw new Error("Invalid email");
+  if (!isEpochMilliseconds(now)) throw new Error("Invalid timestamp");
 
   return {
     email: cleanedEmail,

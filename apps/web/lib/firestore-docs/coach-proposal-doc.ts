@@ -53,7 +53,7 @@ function validateCoachProposalDoc(input: unknown): CoachProposalDocCheck {
 
   const keys = Object.keys(input);
   const unexpectedKey = keys.find((key) => !DOC_KEYS.has(key));
-  if (unexpectedKey) {
+  if (unexpectedKey !== undefined) {
     return { ok: false, reason: `Unexpected proposal key: ${unexpectedKey}.` };
   }
   const hasDecidedAt = Object.hasOwn(input, "decidedAt");
@@ -68,8 +68,10 @@ function validateCoachProposalDoc(input: unknown): CoachProposalDocCheck {
   }
   if (
     !Array.isArray(taskIds) ||
-    taskIds.some((taskId) => typeof taskId !== "string" || taskId.trim().length === 0) ||
-    new Set(taskIds).size !== taskIds.length
+    Array.from(taskIds).some(
+      (taskId) => typeof taskId !== "string" || taskId.trim().length === 0
+    ) ||
+    new Set(Array.from(taskIds)).size !== taskIds.length
   ) {
     return {
       ok: false,

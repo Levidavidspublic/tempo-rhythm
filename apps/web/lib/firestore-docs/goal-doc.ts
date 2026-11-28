@@ -34,6 +34,19 @@ export function checkGoalDoc(input: unknown): GoalDocCheck {
     }
 
     const value = input as Record<string, unknown>;
+    const inherited = [
+      "title",
+      "description",
+      "targetDate",
+      "progressPercent",
+      "status",
+      "createdAt",
+      "updatedAt",
+      "deletedAt",
+    ].find((key) => !Object.hasOwn(value, key) && value[key] !== undefined);
+    if (inherited !== undefined) {
+      return { ok: false, reason: `goal fields must be own properties: ${inherited}` };
+    }
     const unknownKey = Object.keys(value).find((key) => !GOAL_DOC_KEYS.has(key));
     if (unknownKey !== undefined) {
       return { ok: false, reason: `unknown key: ${unknownKey}` };
@@ -67,7 +80,17 @@ export function checkGoalDoc(input: unknown): GoalDocCheck {
       return { ok: false, reason: "deletedAt must be finite" };
     }
 
-    return { ok: true, doc: value as GoalDoc };
+    const doc: GoalDoc = {
+      title: value.title,
+      progressPercent: value.progressPercent,
+      status: value.status,
+      createdAt: value.createdAt,
+      updatedAt: value.updatedAt,
+    };
+    if (value.description !== undefined) doc.description = value.description;
+    if (value.targetDate !== undefined) doc.targetDate = value.targetDate;
+    if (value.deletedAt !== undefined) doc.deletedAt = value.deletedAt;
+    return { ok: true, doc };
   } catch {
     return { ok: false, reason: "goal could not be checked" };
   }

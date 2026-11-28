@@ -78,3 +78,17 @@ test("newAccountGate returns the valid pending active default", () => {
 test("newAccountGate throws on a bad email", () => {
   expect(() => newAccountGate("not-an-email", 123)).toThrow(new Error("Invalid email"));
 });
+
+test("rejects an email with a missing local part or domain", () => {
+  expect(validateAccountGateDoc({ email: "@" }).ok).toBe(false);
+  expect(validateAccountGateDoc({ email: "@example.test" }).ok).toBe(false);
+  expect(validateAccountGateDoc({ email: "person@" }).ok).toBe(false);
+  expect(validateAccountGateDoc({ email: "person@example.test" }).ok).toBe(true);
+});
+
+test("newAccountGate rejects a negative timestamp", () => {
+  expect(() => newAccountGate("person@example.test", -1)).toThrow(new Error("Invalid timestamp"));
+  expect(() => newAccountGate("person@example.test", Number.NaN)).toThrow(
+    new Error("Invalid timestamp")
+  );
+});

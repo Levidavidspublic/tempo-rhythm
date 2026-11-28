@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { checkGoalDoc, restoreGoal, softDeleteGoal, type GoalDoc } from "./goal-doc";
+import { checkGoalDoc, type GoalDoc, restoreGoal, softDeleteGoal } from "./goal-doc";
 
 const goal: GoalDoc = {
   title: "Ship the Firestore port",
@@ -56,5 +56,18 @@ describe("goal documents", () => {
     expect(restored).not.toBe(deleted);
     expect("deletedAt" in restored).toBe(false);
     expect(restored.updatedAt).toBe(1_700_000_000_300);
+  });
+
+  test("a prototype title is rejected", () => {
+    const inherited = { title: "Ship the note", description: "Keep it short" };
+    const goalOnPrototype = Object.create(inherited);
+    Object.assign(goalOnPrototype, {
+      progressPercent: 10,
+      status: "active",
+      createdAt: 1,
+      updatedAt: 2,
+    });
+    expect(checkGoalDoc(goalOnPrototype).ok).toBe(false);
+    expect(checkGoalDoc(goal).ok).toBe(true);
   });
 });
