@@ -19,6 +19,7 @@ import {
   type StoredCalendarEvent,
   saveCalendarEvents,
 } from "@/lib/calendar/event-source";
+import { useTasksDueInRange } from "@/lib/data/tasks/use-tasks-due-in-range";
 import type { MessageKey } from "@/lib/i18n";
 import { intlLocale } from "@/lib/you/screenState";
 import { getAddEventAuthState } from "./addEventGuard";
@@ -101,15 +102,15 @@ function DueTaskList({
                   {task.title}
                 </span>
                 <span className="tp-list-row__meta">
-                {task.dueAt !== undefined
-                  ? new Date(task.dueAt).toLocaleDateString(intlLocale(lang), {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })
-                  : t("cal.due.noDate")}
-                {task.status === "done" ? ` · ${t("cal.due.done")}` : ""}
+                  {task.dueAt !== undefined
+                    ? new Date(task.dueAt).toLocaleDateString(intlLocale(lang), {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })
+                    : t("cal.due.noDate")}
+                  {task.status === "done" ? ` · ${t("cal.due.done")}` : ""}
                 </span>
               </span>
             </li>
@@ -201,8 +202,7 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
     api.calendar_events.listInRange,
     hasConvexUser ? { startMs: range.startMs, endMs: range.endMs } : "skip"
   );
-  const dueTasks = useQuery(
-    api.tasks.listDueInRange,
+  const dueTasks = useTasksDueInRange(
     hasConvexUser ? { startMs: range.startMs, endMs: range.endMs } : "skip"
   );
   const events = useMemo<DisplayCalendarEvent[]>(() => {
@@ -340,11 +340,7 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
           >
             <TpIcon name="plus" size="sm" />
             <span>
-              {isAuthWaiting
-                ? t("cal.waiting")
-                : isSubmitting
-                  ? t("cal.adding")
-                  : t("cal.add")}
+              {isAuthWaiting ? t("cal.waiting") : isSubmitting ? t("cal.adding") : t("cal.add")}
             </span>
           </button>
         </div>
