@@ -83,32 +83,26 @@ describe("staged Convex import", () => {
     expect(users).toContain("E'plan', E'pro'");
     expect(rows).toContain("INSERT INTO tempo_import.staged_rows");
     expect(rows).toContain(
-      `E'task_repeat_cfgs', E'${stagedId("repeat")}'::uuid, E'repeat', E'mixed@example.invalid', 0`,
+      `E'task_repeat_cfgs', E'${stagedId("repeat")}'::uuid, E'repeat', E'mixed@example.invalid', 0`
     );
     expect(rows).toContain(
-      `E'tasks', E'${stagedId("parent")}'::uuid, E'parent', E'mixed@example.invalid', 1`,
+      `E'tasks', E'${stagedId("parent")}'::uuid, E'parent', E'mixed@example.invalid', 1`
     );
     expect(rows).toContain(
-      `E'tasks', E'${stagedId("child")}'::uuid, E'child', E'mixed@example.invalid', 2`,
+      `E'tasks', E'${stagedId("child")}'::uuid, E'child', E'mixed@example.invalid', 2`
     );
     expect(rows).toContain(`E'parent_task_id', E'${stagedId("parent")}'::uuid`);
     expect(rows).toContain(`E'repeat_cfg_id', E'${stagedId("repeat")}'::uuid`);
     for (const chunk of stage.chunks) {
       expect(chunk.sql).toContain("WHERE staged.claimed_at IS NULL;");
-      expect(chunk.sql).not.toMatch(
-        /auth\.users|user_legacy_id|parent_legacy_id|repeat_legacy_id/,
-      );
+      expect(chunk.sql).not.toMatch(/auth\.users|user_legacy_id|parent_legacy_id|repeat_legacy_id/);
     }
   });
 
   test("rejects duplicate emails and unresolved or cyclic owner links", () => {
     const stage = buildStage(
       {
-        users: [
-          user,
-          other,
-          { ...other, _id: "duplicate", email: " OTHER@example.invalid " },
-        ],
+        users: [user, other, { ...other, _id: "duplicate", email: " OTHER@example.invalid " }],
         tasks: [
           task("allowed"),
           task("broken-repeat", undefined, "missing"),
@@ -120,7 +114,7 @@ describe("staged Convex import", () => {
           { ...task("duplicate-owner-task"), userId: other._id },
         ],
       },
-      loadId,
+      loadId
     );
     expect(stage.expected).toMatchObject({ staged_users: 1, tasks: 1 });
     expect(stage.counts.tasks).toEqual({
@@ -128,9 +122,7 @@ describe("staged Convex import", () => {
       transformed: 1,
       rejected: 7,
     });
-    const byId = Object.fromEntries(
-      stage.rejected.map(({ id, reason }) => [id, reason]),
-    );
+    const byId = Object.fromEntries(stage.rejected.map(({ id, reason }) => [id, reason]));
     expect(byId).toEqual({
       other: "duplicate email (case-insensitive)",
       duplicate: "duplicate email (case-insensitive)",
@@ -162,11 +154,9 @@ describe("staged Convex import", () => {
   });
 
   test("fails without printing the contents of a single oversized row", () => {
-    const tasks = [
-      { ...task("wide-task"), title: "private data".repeat(20_000) },
-    ];
+    const tasks = [{ ...task("wide-task"), title: "private data".repeat(20_000) }];
     expect(() => buildStage({ users: [user], tasks }, loadId)).toThrow(
-      /^A single staged row exceeds the SQL chunk size limit\.$/,
+      /^A single staged row exceeds the SQL chunk size limit\.$/
     );
   });
 });
