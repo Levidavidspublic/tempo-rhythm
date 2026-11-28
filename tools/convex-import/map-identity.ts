@@ -1,6 +1,17 @@
 type ConvexDoc = { _id: string; _creationTime: number; [key: string]: unknown };
 type SourceTable = "users" | "subscriptionStates";
 type Rejection = { table: SourceTable; id: string; reason: string };
+type MappedUser = {
+  id: string;
+  email: string;
+  gate: Record<string, string>;
+  profile: Record<string, string>;
+  subscription?: Record<string, string>;
+};
+
+function withoutOwner(values: Record<string, string>) {
+  return Object.fromEntries(Object.entries(values).filter(([column]) => column !== "user_id"));
+}
 
 function text(value: unknown, field: string): string {
   if (typeof value !== "string" || value.includes("\0")) {
@@ -80,6 +91,7 @@ export function mapIdentity(users: readonly ConvexDoc[], subscriptionStates: rea
   const emails = countBy(users, normalizedEmail);
   const userIds = countBy(users, (doc) => doc._id);
   const usersMapped = new Map<string, string>();
+  const mappedUsers = new Map<string, MappedUser>();
   const subscriptionOwners = countBy(subscriptionStates, (doc) =>
     typeof doc.userId === "string" ? doc.userId : undefined
   );
@@ -201,6 +213,12 @@ export function mapIdentity(users: readonly ConvexDoc[], subscriptionStates: rea
         upsert("account_gate", "legacy_convex_id", gateValues, resolved)
       );
       usersMapped.set(user._id, emailSql);
+      mappedUsers.set(user._id, {
+        id: user._id,
+        email,
+        gate: withoutOwner(gateValues),
+        profile: withoutOwner(profileValues),
+      });
     } catch (error) {
       if (!(error instanceof Error)) throw error;
       rejected.push({ table: "users", id: user._id, reason: error.message });
@@ -289,6 +307,8 @@ export function mapIdentity(users: readonly ConvexDoc[], subscriptionStates: rea
           ";",
         upsert("subscription_states", "legacy_convex_id", values, resolved)
       );
+      const mappedUser = mappedUsers.get(userId);
+      if (mappedUser) mappedUser.subscription = withoutOwner(values);
     } catch (error) {
       if (!(error instanceof Error)) throw error;
       rejected.push({ table: "subscriptionStates", id: subscription._id, reason: error.message });
@@ -319,5 +339,10 @@ export function mapIdentity(users: readonly ConvexDoc[], subscriptionStates: rea
       rejected: subscriptionsRejected,
     },
   };
-  return { sql: [...sql, "COMMIT;", ""].join("\n"), rejected, counts };
+  return {
+    sql: [...sql, "COMMIT;", ""].join("\n"),
+    rejected,
+    counts,
+    users: [...mappedUsers.values()],
+  };
 }
