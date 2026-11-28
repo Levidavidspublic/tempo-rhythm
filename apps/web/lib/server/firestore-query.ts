@@ -8,7 +8,12 @@ export type ListRequest = {
   uid: string;
   collection: string;
   filters?: ListFilter[];
-  orderBy?: { field: string; direction: "asc" | "desc" };
+  orderBy?: {
+    field: string;
+    direction: "asc" | "desc";
+    /** Required for cursor pagination because a value-only cursor needs a unique field. */
+    unique?: boolean;
+  };
   limit?: number;
   startAfter?: string | number;
 };
@@ -114,6 +119,9 @@ export function buildListQuery(request: ListRequest): {
   if (request.startAfter !== undefined) {
     if (!request.orderBy) {
       throw new FirestoreQueryError("startAfter requires orderBy");
+    }
+    if (request.orderBy.unique !== true) {
+      throw new FirestoreQueryError("startAfter requires a unique orderBy field");
     }
     structuredQuery.startAt = {
       values: [encodeValue(request.startAfter)],
