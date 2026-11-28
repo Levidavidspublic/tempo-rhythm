@@ -20,7 +20,8 @@ import {
 import {reviewKind} from './release-gate.mjs';
 import {nextStep, ownerTicket} from './review-fix.mjs';
 import {judge as scopeJudge, judgeBatch, isBatchPR} from './scope-guard.mjs';
-import {selectChecks} from './merge-gate-checks.mjs';
+import {selectChecks, partitionWait, isMergeGateEntry} from './merge-gate-checks.mjs';
+import {pathToFileURL} from 'node:url';
 import {
   ciGreen,
   readiness,
@@ -1526,4 +1527,42 @@ t('merge gate counts only the latest run of each check name', () => {
   );
 });
 
+
+t('linkedTickets drops unsafe integers', () => {
+  assert.deepEqual(linkedTickets('Closes #12 and Closes #99999999999999999999999'), [12]);
+  assert.deepEqual(linkedTickets('Closes #0'), []);
+});
+t('wait partition stays open until required names are present and complete', () => {
+  const open = partitionWait([{name: 'ci', status: 'completed'}], ['ci', 'google-style']);
+  assert.equal(open.ready, false);
+  assert.deepEqual(open.missing, ['google-style']);
+  const ready = partitionWait(
+    [{name: 'ci', status: 'completed'}, {name: 'google-style', status: 'completed'}],
+    ['ci', 'google-style'],
+  );
+  assert.equal(ready.ready, true);
+  const pending = partitionWait([{name: 'ci', status: 'in_progress'}], ['ci']);
+  assert.equal(pending.ready, false);
+  assert.deepEqual(pending.pending.map(c => c.name), ['ci']);
+});
+t('merge-gate entry comparison encodes a hash in the path', () => {
+  const argvPath = '/tmp/foo#bar/merge-gate.mjs';
+  assert.equal(isMergeGateEntry(pathToFileURL(argvPath).href, argvPath), true);
+  assert.equal(isMergeGateEntry(`file://${argvPath}`, argvPath), false);
+});
+
+await ta('review threads: missing pageInfo fails closed', async () => {
+  await assert.rejects(
+    fetchReviewThreads('o', 'r', 1, async () => ({
+      data: {repository: {pullRequest: {reviewThreads: {nodes: []}}}},
+    })),
+    /hasNextPage/,
+  );
+  await assert.rejects(
+    fetchReviewThreads('o', 'r', 1, async () => ({
+      data: {repository: {pullRequest: {reviewThreads: {pageInfo: {hasNextPage: null}, nodes: []}}}},
+    })),
+    /hasNextPage/,
+  );
+});
 console.log(`all ${n} passed`);

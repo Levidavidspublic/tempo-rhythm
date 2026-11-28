@@ -10,7 +10,7 @@
 //  5 coderabbit CodeRabbit approval or no open CHANGES_REQUESTED; exit 2 = "can't keep up" -> fallback reviewer.
 //  6 merge      enable squash auto-merge, ONLY when base is integration. Never main/master.
 import { gh, ghAll, repoParts, summary, linkedTickets } from "./gh-api.mjs";
-import { isCountedCheck, latestRunPerName } from "./merge-gate-checks.mjs";
+import { isCountedCheck, latestRunPerName, partitionWait, REQUIRED_CHECK_NAMES, isMergeGateEntry } from "./merge-gate-checks.mjs";
 
 class GateExit extends Error {
   constructor(code) {
@@ -30,28 +30,47 @@ async function pr() {
 async function checkRuns(sha) {
   return ghAll(`${R}/commits/${sha}/check-runs?filter=latest`, (j) => j.check_runs);
 }
-async function waitFor(sha, pick, timeoutMin) {
+async function waitFor(sha, pick, timeoutMin, requiredNames = []) {
   const end = Date.now() + timeoutMin * 60000;
   for (;;) {
     const runs = latestRunPerName((await checkRuns(sha)).filter(pick));
-    const pending = runs.filter((c) => c.status !== "completed");
-    if (runs.length && !pending.length) return runs;
-    if (Date.now() > end) return { timeout: true, runs, pending };
+    const wait = partitionWait(runs, requiredNames);
+    if (wait.ready) return runs;
+    if (Date.now() > end) return { timeout: true, runs, pending: wait.pending, missing: wait.missing };
     await sleep(30000);
   }
 }
+
+function waitNames(res) {
+  const pending = (res.pending || []).map((c) => c.name);
+  const missing = res.missing || [];
+  return [...pending, ...missing.map((name) => `${name} (missing)`)].join(", ") || "(none reported)";
+}
+
 const okConc = (c) => ["success", "skipped", "neutral"].includes(c.conclusion);
 
 async function scope() {
   const p = await pr();
   const ticket = linkedTickets(p.body)[0];
-  const res = await waitFor(p.head.sha, (c) => c.name === "scope-guard", 20);
+  const res = await waitFor(p.head.sha, (c) => c.name === "scope-guard", 20, ["scope-guard"]);
   if (res.timeout) {
-    await summary(["## 1 scope", "- FAIL: scope-guard did not finish in 20 min (fail closed)."]);
+    await summary(["## 1 scope", `- FAIL: scope-guard did not finish in 20 min (fail closed): ${waitNames(res)}.`]);
     throw new GateExit(1);
   }
-  const run = res[0];
+  const run = res.find((c) => c.name === "scope-guard") || res[0];
+  if (!run) {
+    await summary(["## 1 scope", `- FAIL: scope-guard did not appear (${waitNames(res)}).`]);
+    throw new GateExit(1);
+  }
   if (okConc(run)) {
+    const isConfig = (p.labels || []).some((label) => label.name === "config");
+    if (!ticket && !isConfig) {
+      await summary([
+        "## 1 scope",
+        "- FAIL: scope-guard is green but this PR has no safe `Closes #N` ticket and is not a config PR.",
+      ]);
+      throw new GateExit(1);
+    }
     await summary(["## 1 scope", "- PASS (scope-guard green)"]);
     return;
   }
@@ -89,11 +108,11 @@ async function scope() {
 
 async function checks() {
   const p = await pr();
-  const res = await waitFor(p.head.sha, isCountedCheck, 60);
+  const res = await waitFor(p.head.sha, isCountedCheck, 60, REQUIRED_CHECK_NAMES);
   if (res.timeout) {
     await summary([
       "## 2 checks",
-      `- FAIL: still pending after 60 min: ${res.pending.map((c) => c.name).join(", ")}`,
+      `- FAIL: still pending after 60 min: ${waitNames(res)}`,
     ]);
     throw new GateExit(1);
   }
@@ -118,11 +137,14 @@ async function coderabbit() {
     );
     const latest = reviews.at(-1);
     const comments = await ghAll(`${R}/issues/${N}/comments`);
-    const limited = comments.some(
-      (c) =>
-        c.user?.login === "coderabbitai[bot]" &&
-        /rate limit|review limit|paused|exceeded/i.test(c.body || "")
-    );
+    const commit = await gh(`${R}/commits/${p.head.sha}`);
+    const headAt = Date.parse(commit.commit?.committer?.date || commit.commit?.author?.date || "") || 0;
+    const limited = comments.some((c) => {
+      if (c.user?.login !== "coderabbitai[bot]") return false;
+      const at = Date.parse(c.updated_at || c.created_at || "") || 0;
+      if (at < headAt) return false;
+      return /rate[\s-]*limit|review limit|usage limit/i.test(c.body || "");
+    });
     if (latest && latest.commit_id === p.head.sha) {
       if (latest.state === "CHANGES_REQUESTED") {
         await summary(["## 5 coderabbit", "- FAIL: CodeRabbit requested changes."]);
@@ -152,7 +174,7 @@ async function merge() {
   await summary(["## 6 merge", "- Gates 1-5 passed. Squash-merging into integration."]);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMergeGateEntry(import.meta.url, process.argv[1])) {
   const cmd = process.argv[2];
   const fns = { scope, checks, coderabbit, merge };
   try {

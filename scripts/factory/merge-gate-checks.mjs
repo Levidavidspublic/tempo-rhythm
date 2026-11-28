@@ -28,3 +28,32 @@ export function isCountedCheck(run) {
 export function selectChecks(runs) {
   return latestRunPerName(runs).filter(isCountedCheck);
 }
+
+// Names the integration ruleset requires, plus google-style (gate 3).
+// waitFor must not return until each of these has a run.
+export const REQUIRED_CHECK_NAMES = [
+  "ci",
+  "e2e-preview",
+  "secret-scan",
+  "config-guard",
+  "scope-guard",
+  "google-style",
+];
+
+export function partitionWait(runs, requiredNames = []) {
+  const pending = runs.filter((c) => c.status !== "completed");
+  const present = new Set(runs.map((c) => c.name));
+  const missing = requiredNames.filter((name) => !present.has(name));
+  return {
+    pending,
+    missing,
+    ready: pending.length === 0 && missing.length === 0 && (runs.length > 0 || requiredNames.length === 0),
+  };
+}
+
+import { pathToFileURL } from "node:url";
+
+export function isMergeGateEntry(moduleUrl, argvPath) {
+  if (!argvPath) return false;
+  return moduleUrl === pathToFileURL(argvPath).href;
+}

@@ -63,7 +63,10 @@ export async function fetchReviewThreads(owner, repo, number, ghImpl = gh) {
     const rt = g?.data?.repository?.pullRequest?.reviewThreads;
     if (g?.errors || !rt || !Array.isArray(rt.nodes)) throw new Error(`reviewThreads for #${number}: incomplete response${g?.errors ? `: ${JSON.stringify(g.errors).slice(0, 200)}` : ""}`);
     out.push(...rt.nodes.map(mapReviewThread));
-    if (!rt.pageInfo?.hasNextPage) return out;
+    if (typeof rt.pageInfo?.hasNextPage !== "boolean") {
+      throw new Error(`reviewThreads for #${number}: pageInfo.hasNextPage must be a boolean`);
+    }
+    if (rt.pageInfo.hasNextPage === false) return out;
     if (!rt.pageInfo.endCursor) throw new Error(`reviewThreads for #${number}: next page without a cursor`);
     after = rt.pageInfo.endCursor;
   }
