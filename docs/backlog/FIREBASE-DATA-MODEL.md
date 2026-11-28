@@ -40,7 +40,9 @@ The catch-all deny stays. `private/**` is already denied by it. Admin SDK bypass
 
 Path: `users/{uid}/{collection}/{docId}`. Fields stay as in `convex/schema.ts` on this date, minus `userId`. Soft-delete stays `deletedAt`. These tables each declare `userId` in the schema:
 
-`conversations`, `chatRequests`, `memories`, `tasks`, `taskRepeatCfgs`, `calendarEvents`, `focusBlocks`, `notes`, `noteBlocks`, `pageOperations`, `pageOperationPayloads`, `pageProposals`, `habits`, `goals`, `dayPlans`, `timeBlocks`, `habitCheckIns`, `templates`, `userPreferences`, `coachWebSearches`, `nags`, `coachSettings`, `coachProposals`, `notifications`.
+`conversations`, `chatRequests`, `memories`, `tasks`, `taskRepeatCfgs`, `calendarEvents`, `focusBlocks`, `notes`, `noteBlocks`, `pageOperations`, `habits`, `goals`, `dayPlans`, `timeBlocks`, `habitCheckIns`, `templates`, `userPreferences`, `coachWebSearches`, `nags`, `coachSettings`, `coachProposals`, `notifications`.
+
+`pageOperationPayloads` and `pageProposals` declare `userId` but are not in this list. Their content is transient. `convex/lib/pagePrivacy.ts` returns undo fragments only while `now < undoUntilMs`, and proposal content only while the proposal is pending and unexpired. A late cleanup must not leave that content readable under the owner rule. Both collections are private. Eligible content is a guarded server route, not the client SDK.
 
 `connectionLimits` declares `userId` but is not in this list. It holds the connect-attempt and Executor-call counters (`convex/connections.ts`). A client write could reset them. It is private.
 
@@ -64,6 +66,8 @@ Path: `users/{uid}/{collection}/{docId}`. Fields stay as in `convex/schema.ts` o
 | `connectionCalls` | `private/{uid}/connectionCalls/{docId}` | Audit of tool calls. The owner reads it through a Vercel route. The client SDK does not write it. |
 | `connectionLimits` | `private/{uid}/connectionLimits/{docId}` | Connect-attempt and Executor-call counters. The owner may see the numbers through a Vercel route. The client SDK does not write the counters. |
 | `voiceSessions` | `private/{uid}/voiceLeases/{docId}` | `usedGlobalMs` in `convex/voice.ts` sums every lease on one UTC day, and a day with too many rows counts as fully spent. A client insert under the owner rule could fill that cap for everyone. `start`, `renew`, and `stop` stay server routes. |
+| `pageOperationPayloads` | `private/{uid}/pageOperationPayloads/{docId}` | Undo fragments. Returned only while `now < undoUntilMs` (`convex/lib/pagePrivacy.ts`). Eligible content is a guarded server route. The client SDK does not read or write these rows. |
+| `pageProposals` | `private/{uid}/pageProposals/{docId}` | Proposal content. Returned only while the proposal is pending and `now < proposalExpiresAtMs`. Eligible content is a guarded server route. The client SDK does not read or write these rows. |
 
 ## Functions
 
@@ -72,7 +76,7 @@ Public `query` / `mutation` for the owner collections above become client SDK re
 Port order, one PR each, after this map and the scanner PR are on `integration`:
 
 1. Tasks: `convex/tasks.ts` (`tasks`, `taskRepeatCfgs`).
-2. Notes: `convex/notes.ts` plus page ledger modules (`notes`, `noteBlocks`, `pageOperations`, `pageOperationPayloads`, `pageProposals`, `templates`).
+2. Notes: `convex/notes.ts` plus page ledger modules (`notes`, `noteBlocks`, `pageOperations`, `templates`). `pageOperationPayloads` and `pageProposals` stay server routes under `private/`.
 3. Day: `habits`, `habitCheckIns`, `goals`, `dayPlans`, `timeBlocks`, `focusBlocks`, `calendarEvents`.
 4. Coach: `conversations`, `messages`, `chatRequests`, `memories`, `nags`, `coachSettings`, `coachProposals`, `coachWebSearches`. Reply, web search, and Executor calls stay server routes.
 5. Profile: client writes `name`, `fullName`, and `onboardedAt` on `users/{uid}`. `userPreferences` and `notifications` stay owner collections. Authorization fields and `subscriptionStates` are server routes. Billing webhooks stay server routes (`convex/revenuecat.ts`).
