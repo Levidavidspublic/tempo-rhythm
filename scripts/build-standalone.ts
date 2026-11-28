@@ -14,8 +14,9 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const repoRoot = path.resolve(import.meta.dir, "..");
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const appRel = "apps/web";
 const appDir = path.join(repoRoot, appRel);
 
@@ -97,7 +98,11 @@ const servers = findServer(standaloneDir);
 const preferred = servers.find((file) => file.endsWith(`${path.sep}${appRel}${path.sep}server.js`));
 const serverSrc = preferred ?? (servers.length === 1 ? servers[0] : undefined);
 if (serverSrc === undefined) {
-  die(servers.length === 0 ? "standalone output has no server.js" : `More than one server.js and none under ${appRel}`);
+  die(
+    servers.length === 0
+      ? "standalone output has no server.js"
+      : `More than one server.js and none under ${appRel}`
+  );
 }
 
 function danglingLinks(dir: string): string[] {
@@ -150,7 +155,10 @@ if (fs.existsSync(publicSrc)) {
 
 const rootServer = path.join(outDir, "server.js");
 if (path.resolve(serverDestDir, "server.js") !== path.resolve(rootServer)) {
-  const rel = path.relative(outDir, path.join(serverDestDir, "server.js")).split(path.sep).join("/");
+  const rel = path
+    .relative(outDir, path.join(serverDestDir, "server.js"))
+    .split(path.sep)
+    .join("/");
   fs.writeFileSync(
     rootServer,
     `"use strict";
@@ -165,13 +173,16 @@ child.on("exit", (code, signal) => {
   }
   process.exit(code === null ? 1 : code);
 });
-`,
+`
   );
 }
 
 const pkgPath = path.join(outDir, "package.json");
 const pkg = fs.existsSync(pkgPath)
-  ? (JSON.parse(fs.readFileSync(pkgPath, "utf8")) as { scripts?: Record<string, string>; engines?: Record<string, string> })
+  ? (JSON.parse(fs.readFileSync(pkgPath, "utf8")) as {
+      scripts?: Record<string, string>;
+      engines?: Record<string, string>;
+    })
   : {};
 pkg.scripts = { ...(pkg.scripts ?? {}), start: "node server.js" };
 pkg.engines = { ...(pkg.engines ?? {}), node: "24" };
