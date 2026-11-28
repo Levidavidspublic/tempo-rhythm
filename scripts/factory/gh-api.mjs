@@ -55,6 +55,10 @@ export function linkedTickets(body) {
 
 // Promotion PR = Amit's integration -> live-branch PR.
 export function isPromotion(pr) {
-  return ["master", "main"].includes(pr.base.ref) && pr.head.ref === "integration" &&
-    pr.head.repo && pr.head.repo.full_name === pr.base.repo.full_name;
+  return (
+    ["master", "main"].includes(pr.base.ref) &&
+    pr.head.ref === "integration" &&
+    pr.head.repo &&
+    pr.head.repo.full_name === pr.base.repo.full_name
+  );
 }

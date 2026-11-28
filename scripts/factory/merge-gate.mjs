@@ -10,7 +10,13 @@
 //  5 coderabbit CodeRabbit approval or no open CHANGES_REQUESTED; exit 2 = "can't keep up" -> fallback reviewer.
 //  6 merge      enable squash auto-merge, ONLY when base is integration. Never main/master.
 import { gh, ghAll, repoParts, summary, linkedTickets } from "./gh-api.mjs";
-import { isCountedCheck, latestRunPerName, partitionWait, REQUIRED_CHECK_NAMES, isMergeGateEntry } from "./merge-gate-checks.mjs";
+import {
+  isCountedCheck,
+  latestRunPerName,
+  partitionWait,
+  REQUIRED_CHECK_NAMES,
+  isMergeGateEntry,
+} from "./merge-gate-checks.mjs";
 
 class GateExit extends Error {
   constructor(code) {
@@ -36,7 +42,8 @@ async function waitFor(sha, pick, timeoutMin, requiredNames = []) {
     const runs = latestRunPerName((await checkRuns(sha)).filter(pick));
     const wait = partitionWait(runs, requiredNames);
     if (wait.ready) return runs;
-    if (Date.now() > end) return { timeout: true, runs, pending: wait.pending, missing: wait.missing };
+    if (Date.now() > end)
+      return { timeout: true, runs, pending: wait.pending, missing: wait.missing };
     await sleep(30000);
   }
 }
@@ -44,7 +51,9 @@ async function waitFor(sha, pick, timeoutMin, requiredNames = []) {
 function waitNames(res) {
   const pending = (res.pending || []).map((c) => c.name);
   const missing = res.missing || [];
-  return [...pending, ...missing.map((name) => `${name} (missing)`)].join(", ") || "(none reported)";
+  return (
+    [...pending, ...missing.map((name) => `${name} (missing)`)].join(", ") || "(none reported)"
+  );
 }
 
 const okConc = (c) => ["success", "skipped", "neutral"].includes(c.conclusion);
@@ -54,7 +63,10 @@ async function scope() {
   const ticket = linkedTickets(p.body)[0];
   const res = await waitFor(p.head.sha, (c) => c.name === "scope-guard", 20, ["scope-guard"]);
   if (res.timeout) {
-    await summary(["## 1 scope", `- FAIL: scope-guard did not finish in 20 min (fail closed): ${waitNames(res)}.`]);
+    await summary([
+      "## 1 scope",
+      `- FAIL: scope-guard did not finish in 20 min (fail closed): ${waitNames(res)}.`,
+    ]);
     throw new GateExit(1);
   }
   const run = res.find((c) => c.name === "scope-guard") || res[0];
@@ -110,10 +122,7 @@ async function checks() {
   const p = await pr();
   const res = await waitFor(p.head.sha, isCountedCheck, 60, REQUIRED_CHECK_NAMES);
   if (res.timeout) {
-    await summary([
-      "## 2 checks",
-      `- FAIL: still pending after 60 min: ${waitNames(res)}`,
-    ]);
+    await summary(["## 2 checks", `- FAIL: still pending after 60 min: ${waitNames(res)}`]);
     throw new GateExit(1);
   }
   const bad = res.filter((c) => !okConc(c));
@@ -138,7 +147,8 @@ async function coderabbit() {
     const latest = reviews.at(-1);
     const comments = await ghAll(`${R}/issues/${N}/comments`);
     const commit = await gh(`${R}/commits/${p.head.sha}`);
-    const headAt = Date.parse(commit.commit?.committer?.date || commit.commit?.author?.date || "") || 0;
+    const headAt =
+      Date.parse(commit.commit?.committer?.date || commit.commit?.author?.date || "") || 0;
     const limited = comments.some((c) => {
       if (c.user?.login !== "coderabbitai[bot]") return false;
       const at = Date.parse(c.updated_at || c.created_at || "") || 0;

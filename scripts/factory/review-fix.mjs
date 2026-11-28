@@ -43,9 +43,14 @@ async function main() {
   const r = await fetchCoderabbit(owner, repo, n);
   const labels = labelNames(r.pr);
   const lines = [`## review-fix #${n}`, `CodeRabbit: ${r.state} — ${r.detail}`];
-  if (!isFactoryPr(r.pr, labels)) { lines.push("Not a factory PR → nothing."); return summary(lines); }
+  if (!isFactoryPr(r.pr, labels)) {
+    lines.push("Not a factory PR → nothing.");
+    return summary(lines);
+  }
   const step = nextStep({ state: r.state, labels });
-  lines.push(`Next: ${step.action}${step.attempt ? ` (attempt ${step.attempt}/3)` : ""} — ${step.why || ""}`);
+  lines.push(
+    `Next: ${step.action}${step.attempt ? ` (attempt ${step.attempt}/3)` : ""} — ${step.why || ""}`
+  );
   const batch = isBatchPR(r.pr);
   let [ticket] = linkedTickets(r.pr.body);
   if (step.action === "fix" && batch) {
@@ -55,23 +60,51 @@ async function main() {
       if (issue && !issue.pull_request) tickets.push({ number: t, fm: frontMatter(issue.body) });
     }
     ticket = ownerTicket(r.findings, tickets);
-    if (!ticket) { lines.push("Batch PR links no tickets → cannot dispatch a lane."); return summary(lines); }
-    const note = findingsNote(r.findings).replace("stay inside the ticket scope", `fix them on the batch branch ${r.pr.head.ref}; stay inside the scopes of the batch's tickets; never touch convex/`);
-    lines.push(`Batch PR: dispatch factory-lane-claude on ${r.pr.head.ref} (ticket #${ticket}) with ${r.findings.length} finding(s).`);
+    if (!ticket) {
+      lines.push("Batch PR links no tickets → cannot dispatch a lane.");
+      return summary(lines);
+    }
+    const note = findingsNote(r.findings).replace(
+      "stay inside the ticket scope",
+      `fix them on the batch branch ${r.pr.head.ref}; stay inside the scopes of the batch's tickets; never touch convex/`
+    );
+    lines.push(
+      `Batch PR: dispatch factory-lane-claude on ${r.pr.head.ref} (ticket #${ticket}) with ${r.findings.length} finding(s).`
+    );
     if (!dry) {
       await addLabels(owner, repo, n, [`review-fix:${step.attempt}`]);
-      await gh(`/repos/${owner}/${repo}/actions/workflows/factory-lane-claude.yml/dispatches`, { method: "POST", body: { ref: "integration", inputs: { issue_number: String(ticket), fix_note: note, target_branch: r.pr.head.ref } } });
+      await gh(`/repos/${owner}/${repo}/actions/workflows/factory-lane-claude.yml/dispatches`, {
+        method: "POST",
+        body: {
+          ref: "integration",
+          inputs: { issue_number: String(ticket), fix_note: note, target_branch: r.pr.head.ref },
+        },
+      });
     }
     return summary(lines);
   }
   if (step.action === "fix") {
-    if (!ticket) { lines.push("No linked ticket (Closes #N) → cannot dispatch a lane."); return summary(lines); }
+    if (!ticket) {
+      lines.push("No linked ticket (Closes #N) → cannot dispatch a lane.");
+      return summary(lines);
+    }
     const issue = await gh(`/repos/${owner}/${repo}/issues/${ticket}`);
-    const lane = [...labelNames(issue), ...labels].find((l) => /^lane:(claude|codex|cursor)$/.test(l))?.slice(5) || "claude";
-    lines.push(`Dispatch factory-lane-${lane} for ticket #${ticket} with ${r.findings.length} finding(s).`);
+    const lane =
+      [...labelNames(issue), ...labels]
+        .find((l) => /^lane:(claude|codex|cursor)$/.test(l))
+        ?.slice(5) || "claude";
+    lines.push(
+      `Dispatch factory-lane-${lane} for ticket #${ticket} with ${r.findings.length} finding(s).`
+    );
     if (!dry) {
       await addLabels(owner, repo, n, [`review-fix:${step.attempt}`]);
-      await gh(`/repos/${owner}/${repo}/actions/workflows/factory-lane-${lane}.yml/dispatches`, { method: "POST", body: { ref: "integration", inputs: { issue_number: String(ticket), fix_note: findingsNote(r.findings) } } });
+      await gh(`/repos/${owner}/${repo}/actions/workflows/factory-lane-${lane}.yml/dispatches`, {
+        method: "POST",
+        body: {
+          ref: "integration",
+          inputs: { issue_number: String(ticket), fix_note: findingsNote(r.findings) },
+        },
+      });
     }
   } else if (step.action === "block" && !dry) {
     await addLabels(owner, repo, n, ["blocked:amit"]);
@@ -79,4 +112,8 @@ async function main() {
   }
   return summary(lines);
 }
-if (import.meta.url === `file://${process.argv[1]}`) main().catch(async (e) => { await summary([`FAIL: ${e.message}`]); process.exit(1); });
+if (import.meta.url === `file://${process.argv[1]}`)
+  main().catch(async (e) => {
+    await summary([`FAIL: ${e.message}`]);
+    process.exit(1);
+  });

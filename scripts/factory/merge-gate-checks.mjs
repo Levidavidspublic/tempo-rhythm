@@ -47,7 +47,10 @@ export function partitionWait(runs, requiredNames = []) {
   return {
     pending,
     missing,
-    ready: pending.length === 0 && missing.length === 0 && (runs.length > 0 || requiredNames.length === 0),
+    ready:
+      pending.length === 0 &&
+      missing.length === 0 &&
+      (runs.length > 0 || requiredNames.length === 0),
   };
 }
 
