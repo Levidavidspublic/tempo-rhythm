@@ -62,15 +62,20 @@ function canonical(target: string): string {
   return path.join(real, ...missing.reverse());
 }
 
-function assertSafeOutDir(out: string): void {
-  const root = canonical(repoRoot);
+export function assertSafeOutDir(out: string, rootDir: string = repoRoot): void {
+  const root = canonical(rootDir);
   const dest = canonical(out);
+  if (dest === path.parse(dest).root) {
+    die("Refusing output directory: it is a filesystem root.");
+  }
   if (dest === root || root.startsWith(`${dest}${path.sep}`)) {
     die("Refusing output directory: it is the repository or a parent of it.");
   }
   const rel = path.relative(root, dest);
   const outside = rel === ".." || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel);
-  if (outside) return;
+  if (outside) {
+    die("Refusing output directory: it is outside the repository.");
+  }
   if (rel.split(path.sep)[0] !== "dist") {
     die("Refusing output directory inside the repository unless it is under dist/.");
   }
@@ -102,118 +107,121 @@ function bypassInFile(file: string): string[] {
   return on;
 }
 
-const bypassOn = [
-  ...NEVER_ON.filter((name) => process.env[name] === "1"),
-  ...[".env", ".env.local", ".env.production", ".env.production.local"].flatMap((file) =>
-    bypassInFile(path.join(appDir, file))
-  ),
-];
-if (bypassOn.length > 0) {
-  die(`Refusing to build: ${[...new Set(bypassOn)].join(", ")} is 1. Never bake the e2e bypass.`);
-}
-
-const missing = unset(BUILD_PUBLIC);
-if (missing.length > 0) {
-  die(`Refusing to build. Set these names (values are not printed): ${missing.join(", ")}`);
-}
-
-const outDir = path.resolve(process.argv[2] ?? path.join(repoRoot, "dist/hostinger"));
-const tarball = `${outDir}.tgz`;
-assertSafeOutDir(outDir);
-
-const build = spawnSync("bun", ["run", "--filter=tempo-rhythm-web", "build"], {
-  cwd: repoRoot,
-  stdio: "inherit",
-  env: process.env,
-});
-if (build.status !== 0) {
-  die(`bun build failed (exit ${build.status ?? "signal"})`);
-}
-
-const standaloneDir = path.join(appDir, ".next", "standalone");
-if (!fs.existsSync(standaloneDir)) {
-  die(`No standalone output at ${path.relative(repoRoot, standaloneDir)}`);
-}
-
-function findServer(dir: string): string[] {
-  const found: string[] = [];
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === "node_modules" || entry.name === ".git") continue;
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) found.push(...findServer(full));
-    else if (entry.name === "server.js") found.push(full);
+function main(): void {
+  const bypassOn = [
+    ...NEVER_ON.filter((name) => process.env[name] === "1"),
+    ...[".env", ".env.local", ".env.production", ".env.production.local"].flatMap((file) =>
+      bypassInFile(path.join(appDir, file))
+    ),
+  ];
+  if (bypassOn.length > 0) {
+    die(`Refusing to build: ${[...new Set(bypassOn)].join(", ")} is 1. Never bake the e2e bypass.`);
   }
-  return found;
-}
 
-const servers = findServer(standaloneDir);
-const preferred = servers.find((file) => file.endsWith(`${path.sep}${appRel}${path.sep}server.js`));
-const serverSrc = preferred ?? (servers.length === 1 ? servers[0] : undefined);
-if (serverSrc === undefined) {
-  die(
-    servers.length === 0
-      ? "standalone output has no server.js"
-      : `More than one server.js and none under ${appRel}`
+  const missing = unset(BUILD_PUBLIC);
+  if (missing.length > 0) {
+    die(`Refusing to build. Set these names (values are not printed): ${missing.join(", ")}`);
+  }
+
+  const outDir = path.resolve(process.argv[2] ?? path.join(repoRoot, "dist/hostinger"));
+  const tarball = `${outDir}.tgz`;
+  assertSafeOutDir(outDir);
+
+  const build = spawnSync("bun", ["run", "--filter=tempo-rhythm-web", "build"], {
+    cwd: repoRoot,
+    stdio: "inherit",
+    env: process.env,
+  });
+  if (build.status !== 0) {
+    die(`bun build failed (exit ${build.status ?? "signal"})`);
+  }
+
+  const standaloneDir = path.join(appDir, ".next", "standalone");
+  if (!fs.existsSync(standaloneDir)) {
+    die(`No standalone output at ${path.relative(repoRoot, standaloneDir)}`);
+  }
+
+  function findServer(dir: string): string[] {
+    const found: string[] = [];
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name === "node_modules" || entry.name === ".git") continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) found.push(...findServer(full));
+      else if (entry.name === "server.js") found.push(full);
+    }
+    return found;
+  }
+
+  const servers = findServer(standaloneDir);
+  const preferred = servers.find((file) =>
+    file.endsWith(`${path.sep}${appRel}${path.sep}server.js`)
   );
-}
-
-function danglingLinks(dir: string): string[] {
-  const found: string[] = [];
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isSymbolicLink()) {
-      const target = path.resolve(path.dirname(full), fs.readlinkSync(full));
-      if (!fs.existsSync(target)) found.push(full);
-      continue;
-    }
-    if (entry.isDirectory()) found.push(...danglingLinks(full));
+  const serverSrc = preferred ?? (servers.length === 1 ? servers[0] : undefined);
+  if (serverSrc === undefined) {
+    die(
+      servers.length === 0
+        ? "standalone output has no server.js"
+        : `More than one server.js and none under ${appRel}`
+    );
   }
-  return found;
-}
 
-function repairDangling(bundle: string) {
-  const bundleModules = path.join(bundle, "node_modules");
-  const repoModules = path.join(repoRoot, "node_modules");
-  for (const link of danglingLinks(bundle)) {
-    const missing = path.resolve(path.dirname(link), fs.readlinkSync(link));
-    const rel = path.relative(bundleModules, missing);
-    if (rel.startsWith("..") || path.isAbsolute(rel)) {
-      die(`dangling link outside the bundle node_modules: ${path.relative(bundle, link)}`);
+  function danglingLinks(dir: string): string[] {
+    const found: string[] = [];
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isSymbolicLink()) {
+        const target = path.resolve(path.dirname(full), fs.readlinkSync(full));
+        if (!fs.existsSync(target)) found.push(full);
+        continue;
+      }
+      if (entry.isDirectory()) found.push(...danglingLinks(full));
     }
-    const source = path.join(repoModules, rel);
-    if (!fs.existsSync(source)) {
-      die(`cannot repair ${path.relative(bundle, link)}; node_modules/${rel} is not in the repo`);
-    }
-    fs.mkdirSync(path.dirname(missing), { recursive: true });
-    fs.cpSync(source, missing, { recursive: true, dereference: true });
+    return found;
   }
-}
 
-fs.rmSync(outDir, { recursive: true, force: true });
-fs.mkdirSync(outDir, { recursive: true });
-const copied = spawnSync("cp", ["-a", `${standaloneDir}/.`, outDir], { stdio: "inherit" });
-if (copied.status !== 0) die(`cp of standalone failed (exit ${copied.status ?? "signal"})`);
-repairDangling(outDir);
+  function repairDangling(bundle: string) {
+    const bundleModules = path.join(bundle, "node_modules");
+    const repoModules = path.join(repoRoot, "node_modules");
+    for (const link of danglingLinks(bundle)) {
+      const missing = path.resolve(path.dirname(link), fs.readlinkSync(link));
+      const rel = path.relative(bundleModules, missing);
+      if (rel.startsWith("..") || path.isAbsolute(rel)) {
+        die(`dangling link outside the bundle node_modules: ${path.relative(bundle, link)}`);
+      }
+      const source = path.join(repoModules, rel);
+      if (!fs.existsSync(source)) {
+        die(`cannot repair ${path.relative(bundle, link)}; node_modules/${rel} is not in the repo`);
+      }
+      fs.mkdirSync(path.dirname(missing), { recursive: true });
+      fs.cpSync(source, missing, { recursive: true, dereference: true });
+    }
+  }
 
-const serverRel = path.relative(standaloneDir, serverSrc);
-const serverDestDir = path.dirname(path.join(outDir, serverRel));
-const staticSrc = path.join(appDir, ".next", "static");
-if (!fs.existsSync(staticSrc)) die("Build produced no .next/static");
-fs.cpSync(staticSrc, path.join(serverDestDir, ".next", "static"), { recursive: true });
-const publicSrc = path.join(appDir, "public");
-if (fs.existsSync(publicSrc)) {
-  fs.cpSync(publicSrc, path.join(serverDestDir, "public"), { recursive: true });
-}
+  fs.rmSync(outDir, { recursive: true, force: true });
+  fs.mkdirSync(outDir, { recursive: true });
+  const copied = spawnSync("cp", ["-a", `${standaloneDir}/.`, outDir], { stdio: "inherit" });
+  if (copied.status !== 0) die(`cp of standalone failed (exit ${copied.status ?? "signal"})`);
+  repairDangling(outDir);
 
-const rootServer = path.join(outDir, "server.js");
-if (path.resolve(serverDestDir, "server.js") !== path.resolve(rootServer)) {
-  const rel = path
-    .relative(outDir, path.join(serverDestDir, "server.js"))
-    .split(path.sep)
-    .join("/");
-  fs.writeFileSync(
-    rootServer,
-    `"use strict";
+  const serverRel = path.relative(standaloneDir, serverSrc);
+  const serverDestDir = path.dirname(path.join(outDir, serverRel));
+  const staticSrc = path.join(appDir, ".next", "static");
+  if (!fs.existsSync(staticSrc)) die("Build produced no .next/static");
+  fs.cpSync(staticSrc, path.join(serverDestDir, ".next", "static"), { recursive: true });
+  const publicSrc = path.join(appDir, "public");
+  if (fs.existsSync(publicSrc)) {
+    fs.cpSync(publicSrc, path.join(serverDestDir, "public"), { recursive: true });
+  }
+
+  const rootServer = path.join(outDir, "server.js");
+  if (path.resolve(serverDestDir, "server.js") !== path.resolve(rootServer)) {
+    const rel = path
+      .relative(outDir, path.join(serverDestDir, "server.js"))
+      .split(path.sep)
+      .join("/");
+    fs.writeFileSync(
+      rootServer,
+      `"use strict";
 const { spawn } = require("node:child_process");
 const path = require("node:path");
 const server = path.join(__dirname, ${JSON.stringify(rel)});
@@ -235,38 +243,48 @@ child.on("exit", (code, signal) => {
   process.exit(code === null ? 1 : code);
 });
 `
-  );
-}
-
-const pkgPath = path.join(outDir, "package.json");
-const pkg = fs.existsSync(pkgPath)
-  ? (JSON.parse(fs.readFileSync(pkgPath, "utf8")) as {
-      scripts?: Record<string, string>;
-      engines?: Record<string, string>;
-    })
-  : {};
-pkg.scripts = { ...(pkg.scripts ?? {}), start: "node server.js" };
-pkg.engines = { ...(pkg.engines ?? {}), node: "24" };
-fs.writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
-
-fs.rmSync(tarball, { force: true });
-const tar = spawnSync("tar", ["-czf", tarball, "-C", path.dirname(outDir), path.basename(outDir)], {
-  stdio: "inherit",
-});
-if (tar.status !== 0) die(`tar failed (exit ${tar.status ?? "signal"})`);
-
-function bytes(target: string): number {
-  const stat = fs.lstatSync(target);
-  if (stat.isSymbolicLink() || !stat.isDirectory()) return stat.size;
-  let total = stat.size;
-  for (const entry of fs.readdirSync(target, { withFileTypes: true })) {
-    total += bytes(path.join(target, entry.name));
+    );
   }
-  return total;
+
+  const pkgPath = path.join(outDir, "package.json");
+  const pkg = fs.existsSync(pkgPath)
+    ? (JSON.parse(fs.readFileSync(pkgPath, "utf8")) as {
+        scripts?: Record<string, string>;
+        engines?: Record<string, string>;
+      })
+    : {};
+  pkg.scripts = { ...(pkg.scripts ?? {}), start: "node server.js" };
+  pkg.engines = { ...(pkg.engines ?? {}), node: "24" };
+  fs.writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
+
+  fs.rmSync(tarball, { force: true });
+  const tar = spawnSync(
+    "tar",
+    ["-czf", tarball, "-C", path.dirname(outDir), path.basename(outDir)],
+    {
+      stdio: "inherit",
+    }
+  );
+  if (tar.status !== 0) die(`tar failed (exit ${tar.status ?? "signal"})`);
+
+  function bytes(target: string): number {
+    const stat = fs.lstatSync(target);
+    if (stat.isSymbolicLink() || !stat.isDirectory()) return stat.size;
+    let total = stat.size;
+    for (const entry of fs.readdirSync(target, { withFileTypes: true })) {
+      total += bytes(path.join(target, entry.name));
+    }
+    return total;
+  }
+
+  console.log(`bundle ${outDir}`);
+  console.log(`bundle_bytes ${bytes(outDir)}`);
+  console.log(`tarball ${tarball}`);
+  console.log(`tarball_bytes ${fs.statSync(tarball).size}`);
+  console.log(`entry server.js -> ${serverRel.split(path.sep).join("/")}`);
 }
 
-console.log(`bundle ${outDir}`);
-console.log(`bundle_bytes ${bytes(outDir)}`);
-console.log(`tarball ${tarball}`);
-console.log(`tarball_bytes ${fs.statSync(tarball).size}`);
-console.log(`entry server.js -> ${serverRel.split(path.sep).join("/")}`);
+const entry = process.argv[1];
+if (entry !== undefined && path.resolve(entry) === fileURLToPath(import.meta.url)) {
+  main();
+}
