@@ -66,7 +66,7 @@ run_sql() {
 }
 
 for file in "$migrations_dir"/*.sql; do
-  run_sql migrate "$file" -1
+  run_sql migrate "$file" -1 -c 'SET ROLE project_admin'
 done
 
 if ! "${psql[@]}" -d tempo_test -v owner_id="$owner_id" -v other_id="$other_id" <<'SQL'
