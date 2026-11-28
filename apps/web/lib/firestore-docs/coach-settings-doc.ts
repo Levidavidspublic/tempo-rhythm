@@ -89,7 +89,7 @@ export function readCoachSettings(
     input === undefined ||
     (typeof input === "object" &&
       !Array.isArray(input) &&
-      (input as Record<string, unknown>).deletedAt !== undefined)
+      isFiniteNumber((input as Record<string, unknown>).deletedAt))
   ) {
     return { ...COACH_SETTINGS_DEFAULTS, updatedAt: now };
   }
