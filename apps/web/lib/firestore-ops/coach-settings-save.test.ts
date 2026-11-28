@@ -69,3 +69,23 @@ test("update patch never carries acceptedStreak or panicUntil", () => {
     expect(result.patch).not.toHaveProperty("panicUntil");
   }
 });
+
+test("an invalid stored document is refused before edits are merged", () => {
+  const broken = { ...stored, updatedAt: Number.NaN };
+  expect(planCoachSettingsSave(broken, { dial: 7 }, 200)).toEqual({
+    ok: false,
+    reason: "invalid",
+  });
+});
+
+test("a prototype dial getter is not written into the patch", () => {
+  const edits = Object.create({
+    get dial() {
+      return 11;
+    },
+  });
+  expect(planCoachSettingsSave(stored, edits, 200)).toEqual({
+    ok: false,
+    reason: "no-change",
+  });
+});

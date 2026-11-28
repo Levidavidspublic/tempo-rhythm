@@ -156,3 +156,34 @@ describe("readCountResult", () => {
     expect(readCountResult(answer).ok).toBe(false);
   });
 });
+
+test("quotes a digit-leading field name", () => {
+  const built = buildCountRequest("tempo-test", "owner1", "tasks", [
+    { field: "2026", value: { stringValue: "1" } },
+  ]);
+  expect(built.ok).toBe(true);
+  if (!built.ok) return;
+  expect(JSON.stringify(built.body)).toContain('"fieldPath":"`2026`"');
+  const ordinary = buildCountRequest("tempo-test", "owner1", "tasks", [
+    { field: "read", value: { stringValue: "1" } },
+  ]);
+  expect(ordinary.ok).toBe(true);
+  if (!ordinary.ok) return;
+  expect(JSON.stringify(ordinary.body)).toContain('"fieldPath":"read"');
+});
+
+test("reads a count that follows a progress entry and rejects any error", () => {
+  expect(
+    readCountResult([
+      { readTime: "t" },
+      { result: { aggregateFields: { count: { integerValue: "4" } } } },
+    ])
+  ).toEqual({ ok: true, count: 4 });
+  expect(
+    readCountResult([
+      { readTime: "t" },
+      { error: { code: 7 } },
+      { result: { aggregateFields: { count: { integerValue: "4" } } } },
+    ]).ok
+  ).toBe(false);
+});

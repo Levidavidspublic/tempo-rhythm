@@ -119,3 +119,28 @@ describe("Firestore list query builder", () => {
     expect(() => buildListQuery({ ...base, startAfter: 1 })).toThrow(FirestoreQueryError);
   });
 });
+
+test("refuses dot-only owner and collection ids", () => {
+  expect(() => buildListQuery({ uid: ".", collection: "tasks" })).toThrow(FirestoreQueryError);
+  expect(() => buildListQuery({ uid: "owner1", collection: ".." })).toThrow(FirestoreQueryError);
+  expect(buildListQuery({ uid: "owner1", collection: "tasks" }).parent).toBe("users/owner1");
+});
+
+test("refuses a range filter ordered by a different field", () => {
+  expect(() =>
+    buildListQuery({
+      uid: "owner1",
+      collection: "tasks",
+      filters: [{ field: "score", op: ">", value: 2 }],
+      orderBy: { field: "title", direction: "asc" },
+    })
+  ).toThrow(FirestoreQueryError);
+  expect(
+    buildListQuery({
+      uid: "owner1",
+      collection: "tasks",
+      filters: [{ field: "score", op: ">", value: 2 }],
+      orderBy: { field: "score", direction: "asc" },
+    }).body.structuredQuery.orderBy
+  ).toEqual([{ field: { fieldPath: "score" }, direction: "ASCENDING" }]);
+});

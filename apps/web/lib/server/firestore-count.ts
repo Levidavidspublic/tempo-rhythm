@@ -40,8 +40,10 @@ export function buildCountRequest(
     return { ok: false, reason: "upTo must be an integer from 1 to 1000" };
   }
 
+  const quote = "`";
+  const fieldPath = (field: string) => (/^[0-9]/.test(field) ? `${quote}${field}${quote}` : field);
   const fieldFilters = filters.map(({ field, value }) => ({
-    fieldFilter: { field: { fieldPath: field }, op: "EQUAL", value },
+    fieldFilter: { field: { fieldPath: fieldPath(field) }, op: "EQUAL", value },
   }));
   const where =
     fieldFilters.length === 1
@@ -72,12 +74,12 @@ export function readCountResult(json: unknown): CountResult {
   if (!Array.isArray(json)) {
     return { ok: false, reason: "aggregation response must be an array" };
   }
-  const entry = json[0];
+  if (json.some((item) => typeof item === "object" && item !== null && "error" in item)) {
+    return { ok: false, reason: "aggregation response contains an error" };
+  }
+  const entry = json.find((item) => typeof item === "object" && item !== null && "result" in item);
   if (typeof entry !== "object" || entry === null) {
     return { ok: false, reason: "aggregation result is missing" };
-  }
-  if ("error" in entry) {
-    return { ok: false, reason: "aggregation response contains an error" };
   }
 
   const value = (
