@@ -31,14 +31,17 @@ export function dirFor(lang: Lang): "ltr" | "rtl" {
 }
 
 /** URL parameter first, then the stored choice, then English. */
-export function resolveLang(param: string | null | undefined, stored: string | null | undefined): Lang {
+export function resolveLang(
+  param: string | null | undefined,
+  stored: string | null | undefined
+): Lang {
   if (isLang(param)) return param;
   if (isLang(stored)) return stored;
   return "en";
 }
 
 const en = {
-  "skip": "Skip to page",
+  skip: "Skip to page",
   "search.title": "Search",
   "search.sub": "Pages, tasks, habits and goals, in one place.",
   "search.label": "Search notes, tasks, habits and goals",
@@ -121,7 +124,8 @@ const en = {
   "coachChat.sendError": "That didn't send. Your message is still here, so try again.",
   "coachChat.unavailable": "The coach can't reach its model right now. Your message is saved.",
   "coachChat.noReply": "No reply yet.",
-  "coachChat.pageUnsaved": "Your page didn't save, so the coach hasn't read it yet. Your message is saved.",
+  "coachChat.pageUnsaved":
+    "Your page didn't save, so the coach hasn't read it yet. Your message is saved.",
   "coachChat.retry": "Try again",
   "coachChat.talk": "Talk",
   "proposal.kind.task": "Task",
@@ -335,7 +339,8 @@ const en = {
   "track.title": "Session tracking",
   "track.signedOut": "Sign in again to see habit streaks and log a focus block.",
   "track.signIn": "Sign in",
-  "track.lede": "A quiet place to notice what you already did. Coming back later still counts — there is no falling behind here.",
+  "track.lede":
+    "A quiet place to notice what you already did. Coming back later still counts — there is no falling behind here.",
   "track.streak": "Habit streak",
   "track.longest.one": "Longest among 1 habit: {longest}.",
   "track.longest.many": "Longest among {n} habits: {longest}.",
@@ -349,7 +354,8 @@ const en = {
   "track.intentionPh": "A gentle first stretch, inbox, meds...",
   "track.minutesLabel": "Minutes",
   "track.log": "Log this block",
-  "track.minutesHint": "One block is 1 to {max} minutes (8 hours). A longer stretch can be two blocks.",
+  "track.minutesHint":
+    "One block is 1 to {max} minutes (8 hours). A longer stretch can be two blocks.",
   "track.empty": "No focus blocks logged yet.",
   "track.emptyHint": "When you finish a short stretch, log it here. One block is enough.",
   "track.listLabel": "Logged focus blocks",
@@ -513,17 +519,21 @@ const en = {
   "bd.back": "Back to my dump",
   // Today's brain-dump panel (TEMPO-B07-16); the rest of its copy reuses the bd.* keys above.
   "bd.today.heading": "Pour it out messy. Keep only the next useful moves.",
-  "bd.today.lede": "It gets sorted into Now, Soon and Later. Now goes on today; Soon and Later wait in your tasks without a date.",
+  "bd.today.lede":
+    "It gets sorted into Now, Soon and Later. Now goes on today; Soon and Later wait in your tasks without a date.",
   "bd.today.full": "Open the full brain dump",
   "bd.today.goodTitle": "Good to include",
-  "bd.today.goodBody": "Tasks, worries, reminders, errands and half-finished thoughts, all in one pile.",
+  "bd.today.goodBody":
+    "Tasks, worries, reminders, errands and half-finished thoughts, all in one pile.",
   "bd.today.quick": "Quick sort",
   "bd.today.wait": "This can take a few seconds.",
   "bd.today.emptyTitle": "Your order shows up here.",
-  "bd.today.emptyBody": "What needs you now, what can wait a little, and what can rest until later.",
+  "bd.today.emptyBody":
+    "What needs you now, what can wait a little, and what can rest until later.",
   "bd.today.laneEmpty": "Empty for now.",
   "bd.today.quickNote": "Sorted with Quick sort. Check the order before you add anything.",
-  "bd.today.stale": "Your text changed after this order was made. Sort again when you want a fresh one.",
+  "bd.today.stale":
+    "Your text changed after this order was made. Sort again when you want a fresh one.",
   "notes.noContent": "No content yet.",
   // v3 screen groups keep their copy in lib/i18n-groups/, one file per group.
   ...starterTemplatesCopy.en,
@@ -541,12 +551,14 @@ const en = {
   "approval.loading": "Opening Tempo…",
   "approval.waitingTitle": "Waiting for approval",
   "approval.pausedTitle": "Your access is paused",
-  "approval.waitingLede": "Thanks for signing up. Tempo is a small beta, and Amit approves each new account by hand.",
+  "approval.waitingLede":
+    "Thanks for signing up. Tempo is a small beta, and Amit approves each new account by hand.",
   "approval.nextTitle": "What happens next",
   "approval.next1": "Amit approves your account. No email is sent when that happens.",
   "approval.next2": "If this page is still open, Tempo opens right here by itself.",
   "approval.next3": "If you close it, come back any time and sign in with this email.",
-  "approval.paused": "Access for this account is paused for now. If you think this is a mistake, reply to your sign-in email.",
+  "approval.paused":
+    "Access for this account is paused for now. If you think this is a mistake, reply to your sign-in email.",
   "approval.signedInAs": "Signed in as",
   "approval.signOut": "Sign out",
   "approval.signingOut": "Signing out…",
@@ -568,11 +580,26 @@ const en = {
   // Executor: Settings · Connections and the coach's "Look in my apps" (TEMPO-B07-08).
   // Placed after the groups on purpose: Executor can be connected now, so the Integrations
   // notice (set.integ.n*, first written in i18n-groups/settings.ts) no longer says nothing is.
-  "set.integ.nTitle": "Executor is the first connection.",
-  "set.integ.nBody": "The other apps below are coming later. We'd rather tell you that than show a button that doesn't work.",
+  "set.integ.sub": "Your tools and connections, in one place.",
+  "set.integ.offline": "You're offline. Connect again to check or change access.",
+  "set.integ.nTitle": "One hub for your tools.",
+  "set.integ.nBody":
+    "Manage your apps in Executor. Connect your own account below; Tempo shows what it can use.",
+  "exec.hub.title": "Your tool hub",
+  "exec.hub.description": "Connect Executor to find available tools from your account.",
+  "exec.hub.controlTitle": "You control access",
+  "exec.hub.permissions":
+    "Choose apps and permissions in your own Executor account. Tempo uses only that account's access.",
+  "exec.hub.limits": "Tempo can find available tools. Changes in other apps are not available yet.",
+  "exec.hub.disconnect":
+    "Disconnect here to stop Tempo using Executor. Your apps and Executor account stay in place.",
+  "exec.hub.askTitle": "Missing a connection?",
+  "exec.hub.askBody": "Tell us which tool you want to use with Tempo.",
+  "exec.hub.otherTitle": "Other ways to connect",
+  "exec.hub.statusError": "Couldn't check your Executor connection. Nothing changed. Try again.",
   "exec.section": "Connections",
   "exec.name": "Executor",
-  "exec.what": "Executor connects Tempo to the apps you already use. Tempo only looks, and asks before anything else.",
+  "exec.what": "Apps and permissions are managed in your own Executor account.",
   "exec.badge.off": "Not connected",
   "exec.badge.connecting": "Connecting",
   "exec.badge.on": "Connected",
@@ -584,9 +611,11 @@ const en = {
   "exec.detail.off": "You sign in on Executor's own page. Tempo never sees your password.",
   "exec.detail.connecting": "Waiting for Executor. If that tab closed, start again.",
   "exec.detail.reauth": "Executor asked Tempo to sign in again.",
-  "exec.detail.quiet": "Executor isn't answering right now. Nothing changed. Tempo tries again the next time you look in your apps.",
+  "exec.detail.quiet":
+    "Executor isn't answering right now. Nothing changed. Tempo tries again the next time you look in your apps.",
   "exec.detail.notSetUp": "Executor isn't set up on Tempo yet. There's nothing to do on your side.",
-  "exec.detail.paused": "Executor is switched off on Tempo for now, so Tempo doesn't use it. You can still disconnect.",
+  "exec.detail.paused":
+    "Executor is switched off on Tempo for now, so Tempo doesn't use it. You can still disconnect.",
   "exec.connectedOn": "Connected",
   "exec.lastUsed": "Last used",
   "exec.notUsed": "Not used yet",
@@ -597,16 +626,20 @@ const en = {
   "exec.opening": "Opening Executor…",
   "exec.disconnecting": "Disconnecting…",
   "exec.confirm.title": "Disconnect Executor?",
-  "exec.confirm.body": "Tempo will stop using Executor. Your Executor account stays as it is.",
+  "exec.confirm.body":
+    "Tempo will stop using Executor. This cannot be undone here; connect again to restore access. Your apps and Executor account stay as they are.",
   "exec.confirm.yes": "Disconnect",
   "exec.confirm.no": "Keep it connected",
   "exec.disconnected": "Disconnected. Executor removed Tempo's access too.",
-  "exec.disconnectedHere": "Disconnected in Tempo. To remove Tempo fully, open Executor and remove it there.",
+  "exec.disconnectedHere":
+    "Disconnected in Tempo. To remove Tempo fully, open Executor and remove it there.",
   "exec.back.confirming": "Finishing the connection with Executor…",
   "exec.back.connected": "Executor is connected. Tempo only looks, and asks before anything else.",
   "exec.back.denied": "Executor wasn't connected. Nothing changed.",
-  "exec.back.expired": "That sign-in took a while, so it closed. Nothing changed. Start again when you're ready.",
-  "exec.back.linkExpired": "That link expired. Nothing changed, so connect again when you're ready.",
+  "exec.back.expired":
+    "That sign-in took a while, so it closed. Nothing changed. Start again when you're ready.",
+  "exec.back.linkExpired":
+    "That link expired. Nothing changed, so connect again when you're ready.",
   "exec.back.mismatch": "This connection was started from a different account, so it wasn't saved.",
   "exec.back.error": "Executor couldn't finish connecting. Nothing changed. Try again in a moment.",
   "exec.err.rateLimited": "That's a lot of connect attempts. Try again in a bit.",
@@ -616,11 +649,13 @@ const en = {
   "exec.look.chip": "Look in my apps",
   "exec.look.label": "What should Tempo look for?",
   "exec.look.placeholder": "My calendar, email from school",
-  "exec.look.help": "Tempo asks Executor which of your apps it can reach. Nothing is read or changed.",
+  "exec.look.help":
+    "Tempo asks Executor which of your apps it can reach. Nothing is read or changed.",
   "exec.look.submit": "Look",
   "exec.look.close": "Close",
   "exec.look.working": "Looking in your apps…",
-  "exec.look.unavailable": "I couldn't reach Executor just now. Nothing changed. Want me to try again?",
+  "exec.look.unavailable":
+    "I couldn't reach Executor just now. Nothing changed. Want me to try again?",
   "exec.look.reauth": "Executor asked Tempo to sign in again. You can reconnect in Settings.",
   "exec.look.rateLimited": "That's a lot of lookups for now. Let's try again in a bit.",
   "exec.look.notConnected": "Executor isn't connected.",
@@ -642,7 +677,7 @@ const en = {
 export type MessageKey = keyof typeof en;
 
 const he: Record<MessageKey, string> = {
-  "skip": "דלגו לדף",
+  skip: "דלגו לדף",
   "search.title": "חיפוש",
   "search.sub": "דפים, משימות, הרגלים ויעדים, במקום אחד.",
   "search.label": "חיפוש בפתקים, משימות, הרגלים ויעדים",
@@ -937,7 +972,8 @@ const he: Record<MessageKey, string> = {
   "track.title": "מעקב ריכוז",
   "track.signedOut": "צריך להתחבר שוב כדי לראות את רצפי ההרגלים ולרשום בלוק ריכוז.",
   "track.signIn": "התחברות",
-  "track.lede": "מקום שקט לראות את מה שכבר עשית. גם לחזור מאוחר יותר נחשב — כאן אי אפשר להישאר מאחור.",
+  "track.lede":
+    "מקום שקט לראות את מה שכבר עשית. גם לחזור מאוחר יותר נחשב — כאן אי אפשר להישאר מאחור.",
   "track.streak": "רצף הרגלים",
   "track.longest.one": "הרצף הארוך ביותר בהרגל אחד: {longest}.",
   "track.longest.many": "הרצף הארוך ביותר מבין {n} הרגלים: {longest}.",
@@ -951,7 +987,8 @@ const he: Record<MessageKey, string> = {
   "track.intentionPh": "צעד ראשון ורגוע, מיילים, תרופות...",
   "track.minutesLabel": "דקות",
   "track.log": "רישום הבלוק",
-  "track.minutesHint": "בלוק אחד נמשך בין 1 ל־{max} דקות (8 שעות). פרק זמן ארוך יותר אפשר לרשום כשני בלוקים.",
+  "track.minutesHint":
+    "בלוק אחד נמשך בין 1 ל־{max} דקות (8 שעות). פרק זמן ארוך יותר אפשר לרשום כשני בלוקים.",
   "track.empty": "עוד לא נרשמו בלוקי ריכוז.",
   "track.emptyHint": "כשמסיימים פרק זמן קצר, אפשר לרשום אותו כאן. בלוק אחד מספיק.",
   "track.listLabel": "בלוקי ריכוז שנרשמו",
@@ -1115,7 +1152,8 @@ const he: Record<MessageKey, string> = {
   "bd.back": "חזרה לטקסט שלי",
   // Today's brain-dump panel (TEMPO-B07-16). Machine-drafted Hebrew: needs native review.
   "bd.today.heading": "אפשר לשפוך הכול, גם מבולגן. נשאיר רק את הצעדים הבאים.",
-  "bd.today.lede": "הכול ממוין ל״עכשיו״, ״בקרוב״ ו״אחר כך״. ״עכשיו״ נכנס להיום, ו״בקרוב״ ו״אחר כך״ מחכים במשימות בלי תאריך.",
+  "bd.today.lede":
+    "הכול ממוין ל״עכשיו״, ״בקרוב״ ו״אחר כך״. ״עכשיו״ נכנס להיום, ו״בקרוב״ ו״אחר כך״ מחכים במשימות בלי תאריך.",
   "bd.today.full": "לדף פריקת המחשבות המלא",
   "bd.today.goodTitle": "כדאי לכלול",
   "bd.today.goodBody": "משימות, דאגות, תזכורות, סידורים ומחשבות חצי גמורות, הכול בערימה אחת.",
@@ -1142,12 +1180,14 @@ const he: Record<MessageKey, string> = {
   "approval.loading": "פותחים את Tempo…",
   "approval.waitingTitle": "ממתינים לאישור",
   "approval.pausedTitle": "הגישה מושהית",
-  "approval.waitingLede": "תודה שנרשמתם. Tempo נמצא בבטא קטנה, וכל חשבון חדש מאושר ידנית על ידי עמית.",
+  "approval.waitingLede":
+    "תודה שנרשמתם. Tempo נמצא בבטא קטנה, וכל חשבון חדש מאושר ידנית על ידי עמית.",
   "approval.nextTitle": "מה קורה עכשיו",
   "approval.next1": "החשבון שלכם יאושר. לא נשלח מייל כשזה קורה.",
   "approval.next2": "אם הדף הזה עדיין פתוח, Tempo ייפתח כאן מעצמו.",
   "approval.next3": "אם סגרתם אותו, אפשר לחזור בכל זמן ולהתחבר עם המייל הזה.",
-  "approval.paused": "הגישה לחשבון הזה מושהית כרגע. אם נראה לכם שזו טעות, אפשר להשיב למייל ההתחברות.",
+  "approval.paused":
+    "הגישה לחשבון הזה מושהית כרגע. אם נראה לכם שזו טעות, אפשר להשיב למייל ההתחברות.",
   "approval.signedInAs": "מחוברים בתור",
   "approval.signOut": "התנתקות",
   "approval.signingOut": "מתנתקים…",
@@ -1167,11 +1207,27 @@ const he: Record<MessageKey, string> = {
   ...settingsCopy.he,
   ...extrasCopy.he,
   // Executor (TEMPO-B07-08). After the groups on purpose: it rewrites the Integrations notice.
-  "set.integ.nTitle": "Executor הוא החיבור הראשון.",
-  "set.integ.nBody": "שאר האפליקציות למטה יגיעו בהמשך. עדיף לנו להגיד לך את זה מאשר להציג כפתור שלא עובד.",
+  // KB Executor hub: machine-drafted Hebrew, awaiting Amit's native read.
+  "set.integ.sub": "הכלים והחיבורים שלכם, במקום אחד.",
+  "set.integ.offline": "אין חיבור לאינטרנט. כדי לבדוק או לשנות הרשאות, צריך להתחבר שוב.",
+  "set.integ.nTitle": "מרכז אחד לכלים שלכם.",
+  "set.integ.nBody":
+    "מנהלים את האפליקציות שלכם ב־Executor. מחברים כאן את החשבון האישי; Tempo מציג במה אפשר להשתמש.",
+  "exec.hub.title": "מרכז הכלים שלכם",
+  "exec.hub.description": "מחברים את Executor כדי למצוא כלים זמינים בחשבון שלכם.",
+  "exec.hub.controlTitle": "הגישה בשליטה שלכם",
+  "exec.hub.permissions":
+    "בוחרים אפליקציות והרשאות בחשבון Executor האישי. Tempo משתמש רק בגישה של החשבון הזה.",
+  "exec.hub.limits": "Tempo יכול למצוא כלים זמינים. שינויים באפליקציות אחרות עדיין אינם זמינים.",
+  "exec.hub.disconnect":
+    "מנתקים כאן כדי לעצור את הגישה של Tempo ל־Executor. האפליקציות וחשבון Executor נשארים במקומם.",
+  "exec.hub.askTitle": "חסר חיבור?",
+  "exec.hub.askBody": "ספרו לנו באיזה כלי תרצו להשתמש עם Tempo.",
+  "exec.hub.otherTitle": "דרכים נוספות להתחבר",
+  "exec.hub.statusError": "לא ניתן לבדוק את החיבור ל־Executor. שום דבר לא השתנה. אפשר לנסות שוב.",
   "exec.section": "חיבורים",
   "exec.name": "Executor",
-  "exec.what": "Executor מחבר את Tempo לאפליקציות שכבר יש לך. Tempo רק מסתכל, ושואל לפני כל דבר אחר.",
+  "exec.what": "האפליקציות וההרשאות מנוהלות בחשבון Executor האישי שלכם.",
   "exec.badge.off": "לא מחובר",
   "exec.badge.connecting": "מתחבר",
   "exec.badge.on": "מחובר",
@@ -1183,7 +1239,8 @@ const he: Record<MessageKey, string> = {
   "exec.detail.off": "ההתחברות נעשית בדף של Executor עצמו. Tempo אף פעם לא רואה את הסיסמה שלך.",
   "exec.detail.connecting": "מחכים ל־Executor. אם הלשונית נסגרה, אפשר להתחיל מחדש.",
   "exec.detail.reauth": "Executor ביקש מ־Tempo להתחבר שוב.",
-  "exec.detail.quiet": "Executor לא עונה כרגע. שום דבר לא השתנה. Tempo ינסה שוב בפעם הבאה שמחפשים באפליקציות שלך.",
+  "exec.detail.quiet":
+    "Executor לא עונה כרגע. שום דבר לא השתנה. Tempo ינסה שוב בפעם הבאה שמחפשים באפליקציות שלך.",
   "exec.detail.notSetUp": "Executor עוד לא הוגדר ב־Tempo. אין מה לעשות מהצד שלך.",
   "exec.detail.paused": "Executor כבוי כרגע ב־Tempo, ולכן Tempo לא משתמש בו. אפשר עדיין לנתק.",
   "exec.connectedOn": "חובר",
@@ -1196,18 +1253,21 @@ const he: Record<MessageKey, string> = {
   "exec.opening": "פותחים את Executor…",
   "exec.disconnecting": "מנתקים…",
   "exec.confirm.title": "לנתק את Executor?",
-  "exec.confirm.body": "Tempo יפסיק להשתמש ב־Executor. החשבון שלך ב־Executor נשאר כמו שהוא.",
+  "exec.confirm.body":
+    "Tempo יפסיק להשתמש ב־Executor. אי אפשר לבטל את הניתוק כאן; כדי להחזיר גישה מתחברים שוב. האפליקציות וחשבון Executor נשארים כמו שהם.",
   "exec.confirm.yes": "ניתוק",
   "exec.confirm.no": "להשאיר מחובר",
   "exec.disconnected": "נותק. גם Executor הסיר את הגישה של Tempo.",
-  "exec.disconnectedHere": "נותק ב־Tempo. כדי להסיר את Tempo לגמרי, אפשר לפתוח את Executor ולהסיר אותו שם.",
+  "exec.disconnectedHere":
+    "נותק ב־Tempo. כדי להסיר את Tempo לגמרי, אפשר לפתוח את Executor ולהסיר אותו שם.",
   "exec.back.confirming": "מסיימים את החיבור ל־Executor…",
   "exec.back.connected": "Executor מחובר. Tempo רק מסתכל, ושואל לפני כל דבר אחר.",
   "exec.back.denied": "Executor לא חובר. שום דבר לא השתנה.",
   "exec.back.expired": "ההתחברות לקחה זמן ולכן נסגרה. שום דבר לא השתנה. אפשר להתחיל מחדש מתי שנוח.",
   "exec.back.linkExpired": "הקישור פג. שום דבר לא השתנה, אז אפשר להתחבר שוב מתי שנוח.",
   "exec.back.mismatch": "החיבור הזה התחיל מחשבון אחר, ולכן הוא לא נשמר.",
-  "exec.back.error": "Executor לא הצליח לסיים את החיבור. שום דבר לא השתנה. אפשר לנסות שוב בעוד רגע.",
+  "exec.back.error":
+    "Executor לא הצליח לסיים את החיבור. שום דבר לא השתנה. אפשר לנסות שוב בעוד רגע.",
   "exec.err.rateLimited": "היו הרבה ניסיונות חיבור. אפשר לנסות שוב בעוד קצת.",
   "exec.err.unavailable": "Executor לא זמין כרגע. שום דבר לא השתנה.",
   "exec.err.connect": "זה לא עבר. שום דבר לא השתנה. אפשר לנסות שוב בעוד רגע.",
@@ -1215,7 +1275,8 @@ const he: Record<MessageKey, string> = {
   "exec.look.chip": "לחפש באפליקציות שלי",
   "exec.look.label": "מה Tempo צריך לחפש?",
   "exec.look.placeholder": "היומן שלי, מייל מבית הספר",
-  "exec.look.help": "Tempo שואל את Executor לאילו מהאפליקציות שלך הוא יכול להגיע. שום דבר לא נקרא ושום דבר לא משתנה.",
+  "exec.look.help":
+    "Tempo שואל את Executor לאילו מהאפליקציות שלך הוא יכול להגיע. שום דבר לא נקרא ושום דבר לא משתנה.",
   "exec.look.submit": "חיפוש",
   "exec.look.close": "סגירה",
   "exec.look.working": "מחפשים באפליקציות שלך…",

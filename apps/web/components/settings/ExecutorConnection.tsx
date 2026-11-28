@@ -25,7 +25,7 @@ import type { MessageKey } from "@/lib/i18n";
 
 /**
  * Settings · Connections: the person's own Executor account (TEMPO-B07-08; design
- * docs/research/EXECUTOR-IN-TEMPO.md §2.5 and §5.5). One row above "Coming later": the name, what
+ * docs/research/EXECUTOR-IN-TEMPO.md §2.5 and §5.5). The tool hub shows the name, what
  * Executor does, the state from `connections.status`, and the button for that state (Connect,
  * Start again, Reconnect, Disconnect with a confirm; "Not set up yet" keeps Connect visible but
  * inert). Connect asks `connections.startExecutorConnect` for the authorization URL and opens it
@@ -37,8 +37,8 @@ import type { MessageKey } from "@/lib/i18n";
  * the address bar at once.
  *
  * The browser never holds a token, a code or a client id, and nothing about the connection is
- * kept in browser storage. If the backend isn't deployed yet (or the query throws), the row
- * shows "Not set up yet" instead of breaking the page.
+ * kept in browser storage. A query error offers Retry; only an actual disabled status says
+ * "Not set up yet". Neither state claims that an account or app is connected.
  */
 
 export type ExecutorBusy = "connect" | "disconnect" | null;
@@ -101,7 +101,11 @@ export function ExecutorRow({
             <TpIcon name="link" size="sm" />
             <span>{t("exec.name")}</span>
             {row.badge ? (
-              <span className="tp-badge" data-component="Badge" data-tone={row.badge.tone === "neutral" ? undefined : row.badge.tone}>
+              <span
+                className="tp-badge"
+                data-component="Badge"
+                data-tone={row.badge.tone === "neutral" ? undefined : row.badge.tone}
+              >
                 <TpIcon name={row.badge.icon} size="sm" />
                 <span>{t(row.badge.label)}</span>
               </span>
@@ -191,7 +195,13 @@ export function ExecutorRow({
  * always on the page, empty until there is something to say, so the line is spoken when it arrives.
  * With `onRetry`, a "Try again" button sits under it (outside the live region).
  */
-export function ExecutorNoticeLine({ notice, onRetry }: { notice: ExecutorNotice | null; onRetry?: (() => void) | null }) {
+export function ExecutorNoticeLine({
+  notice,
+  onRetry,
+}: {
+  notice: ExecutorNotice | null;
+  onRetry?: (() => void) | null;
+}) {
   const { t } = useLocale();
   return (
     <>
@@ -209,7 +219,12 @@ export function ExecutorNoticeLine({ notice, onRetry }: { notice: ExecutorNotice
       </output>
       {notice && onRetry ? (
         <div className="tp-setting-row" data-component="SettingRow">
-          <button className="tp-btn tp-btn--secondary" type="button" data-action="retry-confirm" onClick={onRetry}>
+          <button
+            className="tp-btn tp-btn--secondary"
+            type="button"
+            data-action="retry-confirm"
+            onClick={onRetry}
+          >
             <TpIcon name="refresh" size="sm" />
             <span>{t("exec.look.retry")}</span>
           </button>
@@ -219,18 +234,23 @@ export function ExecutorNoticeLine({ notice, onRetry }: { notice: ExecutorNotice
   );
 }
 
-/** The row is extra: if `connections.status` throws (say #989 isn't deployed), show "Not set up yet". */
-class ExecutorBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { failed: boolean }> {
+/** An unreadable status is unknown, not proof that the feature is switched off. */
+class ExecutorBoundary extends Component<
+  { children: ReactNode; fallback: (retry: () => void) => ReactNode },
+  { failed: boolean }
+> {
   state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };
   }
   render() {
-    return this.state.failed ? this.props.fallback : this.props.children;
+    return this.state.failed
+      ? this.props.fallback(() => this.setState({ failed: false }))
+      : this.props.children;
   }
 }
 
-/** What the row shows when the backend can't be read: Executor is off on this deployment. */
+/** Preview fixture for a confirmed disabled deployment; not used to mask query errors. */
 export const EXECUTOR_NOT_SET_UP: ExecutorStatusView = { status: "unavailable", enabled: false };
 
 function LiveExecutorRow({
@@ -244,7 +264,10 @@ function LiveExecutorRow({
   const { isAuthenticated } = useConvexAuth();
   // connections.status needs the users row: wait for the profile, like the coach does.
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
-  const view = useQuery(api.connections.status, isAuthenticated && profile ? { provider: "executor" } : "skip");
+  const view = useQuery(
+    api.connections.status,
+    isAuthenticated && profile ? { provider: "executor" } : "skip"
+  );
   useEffect(() => {
     onView(view ?? undefined);
   }, [view, onView]);
@@ -337,7 +360,7 @@ type FailedConfirm = { nonce: string; before: ExecutorStatusView | undefined; re
  */
 function useExecutorReturn(
   onNotice: (notice: ExecutorNotice | null) => void,
-  view: ExecutorStatusView | undefined,
+  view: ExecutorStatusView | undefined
 ): (() => void) | null {
   const router = useRouter();
   const { isAuthenticated } = useConvexAuth();
@@ -356,10 +379,10 @@ function useExecutorReturn(
       onNotice({ text: "exec.back.confirming", tone: "info", icon: "info" });
       confirm({ nonce: value }).then(
         (result) => onNotice(confirmNotice(result)),
-        () => setFailed({ nonce: value, before, retried }),
+        () => setFailed({ nonce: value, before, retried })
       );
     },
-    [confirm, onNotice],
+    [confirm, onNotice]
   );
 
   useEffect(() => {
@@ -367,7 +390,9 @@ function useExecutorReturn(
     read.current = true;
     const found = readExecutorReturn(window.location.search);
     if (!found) return;
-    router.replace(`${window.location.pathname}${found.search}${window.location.hash}`, { scroll: false });
+    router.replace(`${window.location.pathname}${found.search}${window.location.hash}`, {
+      scroll: false,
+    });
     const outcome = found.outcome;
     if (outcome === "confirm") {
       setNonce(found.nonce);
@@ -418,11 +443,26 @@ export function ExecutorConnection() {
     >
       <div className="tp-settings-section__head">
         <h2 className="tp-settings-section__title" id="executor-title">
-          {t("exec.section")}
+          {t("exec.hub.title")}
         </h2>
+        <p className="tp-settings-section__desc">{t("exec.hub.description")}</p>
       </div>
       <ExecutorNoticeLine notice={notice} onRetry={retryConfirm} />
-      <ExecutorBoundary fallback={<ExecutorRow view={EXECUTOR_NOT_SET_UP} />}>
+      <ExecutorBoundary
+        fallback={(retry) => (
+          <div className="tp-setting-row tp-setting-row--stack" data-component="SettingRow">
+            <p className="tp-error-text" role="alert">
+              {t("exec.hub.statusError")}
+            </p>
+            <div className="tp-setting-row__control">
+              <button className="tp-btn tp-btn--secondary" type="button" onClick={retry}>
+                <TpIcon name="refresh" size="sm" />
+                <span>{t("set.retry")}</span>
+              </button>
+            </div>
+          </div>
+        )}
+      >
         <LiveExecutorRow onNotice={setNotice} onView={setView} />
       </ExecutorBoundary>
     </section>
