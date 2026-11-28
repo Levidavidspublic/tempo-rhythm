@@ -45,8 +45,7 @@ const NEVER_ON = [
 ] as const;
 
 function die(message: string): never {
-  console.error(message);
-  process.exit(1);
+  throw new Error(message);
 }
 
 function unset(names: readonly string[]): string[] {
