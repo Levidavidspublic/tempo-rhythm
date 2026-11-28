@@ -1,23 +1,27 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
- * @screen: settings-prefs
- * @category: Settings
- * @source: docs/design/claude-export/design-system/screens-6.jsx
- * @summary: Theme, dyslexia font, language, motion preferences.
- * @queries: users.preferences
- * @mutations: users.updatePreferences
+ * @screen: settings-prefs (docs/design/v3/screens/web/settings-prefs.html)
+ * @data: preferences.get, coach.getSettings; saves preferences.update, coach.setDial
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { PreferencesForm } from "@/components/notifications-preferences/PreferencesForm";
+import { SettingsScreen } from "@/components/settings/SettingsScreen";
 
 export default function Page() {
   return (
-    <ScaffoldScreen
-      title="Preferences"
-      category="Settings"
-      source="screens-6.jsx"
-      summary="Theme, dyslexia font, language, motion preferences."
-    />
+    <div data-testid="settings-preferences" className="tp-page tp-page--narrow" data-component="PageLayout">
+      <SettingsScreen
+        title="set.prefs.title"
+        sub="set.prefs.sub"
+        offline="set.prefs.offline"
+        loading="set.prefs.loading"
+        errorTitle="set.prefs.errorTitle"
+        errorBody="set.prefs.errorBody"
+        bodyClassName="pr-body"
+        stateClassName="pr-state"
+        statusLine
+      >
+        <PreferencesForm />
+      </SettingsScreen>
+    </div>
   );
 }

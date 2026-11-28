@@ -1,0 +1,64 @@
+name: factory-review-fix
+
+# B-5 review gate = Cursor Bugbot (interim; CodeRabbit optional later). Pre-queue only:
+# Bugbot is NOT a merge-queue required check. When Bugbot (cursor[bot]) submits a review on a
+# factory PR (head factory/* or t/*), or on demand via workflow_dispatch, scripts/factory/review-fix.mjs
+# reads Bugbot's state. Unresolved findings → dispatch the PR's lane (factory-lane-<lane>) with the
+# findings as fix_note so the lane pushes a fix to the SAME branch; max 3 attempts (labels
+# review-fix:1..3), then blocked:amit. Bugbot "couldn't run" → blocked:amit.
+# Enqueue to MQ only after Bugbot clean + 5 required checks green (Scout / GraphQL enqueuePullRequest).
+# Uses github.token only for labels, a comment and workflow_dispatch (no PR creation, no merge: R15).
+# Known limit: Bugbot reviews bot-authored PRs (claude[bot], cursor) only when a Cursor team covers this repo.
+# Batch loop (2026-10-06, factory/LOOP.md): Bugbot reviews ONLY the loop's batch PR (head batch/<loop-id>),
+# so the automatic trigger fires only for batch/* heads; the fix goes to the batch branch. Component PRs
+# (t/*, factory/*) get CI only - no per-PR Bugbot, no per-PR review-fix. workflow_dispatch still works for any PR.
+
+on:
+  pull_request_review:
+    types: [submitted]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Factory PR to check
+        required: true
+        type: string
+      dry_run:
+        description: Print the decision only
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: factory-review-fix-${{ github.event.pull_request.number || inputs.pr_number }}
+  cancel-in-progress: false
+
+jobs:
+  review-fix:
+    if: >-
+      vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (startsWith(github.event.pull_request.head.ref, 'batch/') &&
+        (github.event.review.user.login == 'cursor[bot]' || github.event.review.user.login == 'cursor')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          ref: integration
+          sparse-checkout: |
+            scripts/factory
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Bugbot -> lane fix loop
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: node scripts/factory/review-fix.mjs

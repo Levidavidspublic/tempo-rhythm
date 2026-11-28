@@ -70,12 +70,14 @@ describe("tempo empty-state copy", () => {
 });
 
 describe("tempo empty-state screens", () => {
+  // The T-F008 scaffolds were replaced by the v3 mobile screens (docs/design/v3/screens/mobile);
+  // each screen now carries its own design empty state, so this checks the replacement instead.
   test.each([...SCAFFOLD_SCREENS])(
-    "%s uses TempoEmptyState and keeps a default export",
+    "%s is the v3 screen and keeps a default export",
     async (screenId, filePath) => {
       const source = await Bun.file(filePath).text();
-      expect(source).toContain('from "@/components/TempoEmptyState"');
-      expect(source).toContain(`getTempoEmptyStateCopy("${screenId}")`);
+      expect(source).toContain(`docs/design/v3/screens/mobile/${screenId}.html`);
+      expect(source).not.toContain("T-F008 scaffold");
       expect(source).toMatch(/export default function \w+/);
     },
   );

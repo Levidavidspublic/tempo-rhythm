@@ -1,0 +1,22 @@
+/* The narrow rail is a modal drawer; its links need phone-sized tap targets. */
+@media (max-width: 1023px) {
+  .tp-app[data-rail="open"] .tp-rail .tp-tree-item {
+    min-height: var(--tp-touch);
+  }
+}
+
+.kb74-gallery {
+  display: grid;
+  gap: var(--tp-space-4);
+  padding: var(--tp-space-6);
+}
+
+.kb74-gallery__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tp-space-2);
+}
+
+.kb74-gallery__controls .tp-btn {
+  min-height: var(--tp-touch);
+}

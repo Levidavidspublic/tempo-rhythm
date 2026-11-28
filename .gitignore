@@ -70,3 +70,6 @@ playwright-report/
 .tempo-branch-name
 .tempo-issue.md
 .tempo-request.md
+
+# Archify CLI checkout used by .github/workflows/archify.yml. Never commit.
+.archify-skill/

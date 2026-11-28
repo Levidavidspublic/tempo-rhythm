@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Walk 10 minutes · Habits · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — habit-detail.html */
+  .hd-stack { display: grid; gap: var(--tp-space-6); }
+  .hd-card { display: grid; gap: var(--tp-space-4); min-width: 0; }
+  .hd-grid { display: grid; gap: var(--tp-space-2); min-width: 0; }
+  .hd-row { display: grid; grid-template-columns: calc(var(--tp-space-12) + var(--tp-space-2)) minmax(0, 1fr); gap: var(--tp-space-2); align-items: center; }
+  .hd-actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+  .hd-form { display: grid; gap: var(--tp-space-4); }
+</style>
+</head>
+<body>
+<!--
+@screen   Habit detail
+@route    apps/web/app/(tempo)/habits/[id]/page.tsx
+@layout   TempoShell
+@data     habit = habits.get({ habitId })                                              // Convex query: name, when, rhythm, paused
+@data     days = habits.listDays({ habitId, from: weekStart(localDate(), -5), to: localDate() })   // Convex query: 6 weeks of { date, done }, weeks start Monday, local calendar days
+@data     summary = habits.summary({ habitId, weeks: 6 })                              // Convex query: logged days, open days, easiest weekday (plain words)
+@data     nag = nags.getForHabit({ habitId })                                          // Convex query: the user's own phrase + time, or none
+@actions  log today -> habits.log({ habitId, date: localDate() })                     // optimistic toggle
+@actions  change reminder words -> nags.upsert({ habitId, phrase, time })              // the phrase is stored exactly as written; Undo 5 min
+@actions  start fresh -> habits.startFresh({ habitId })                                // older days hidden here, not deleted
+@actions  pause -> habits.pause({ habitId })                                           // no reminders, no counting
+@states   default | empty | loading | error | offline  (?state=)   + paused
+@flow     1. Title is the habit's name; under it, when it usually happens and its rhythm.
+          2. Log today is the one main action. It fills today's circle in the grid at once.
+          3. The grid shows 6 weeks, Mon 7 Sep to Mon 12 Oct, one row per week, Monday first, with a day-label header. Logged = filled circle with a tick; not logged = empty ring; days after today are blank. Each circle has hidden text with the full date and "logged" / "not logged".
+          4. Under the grid, one plain sentence says what happened ("You walked on 19 of 36 days"). No streak, no best run, no percentage score.
+          5. Reminder in your own words: shows the phrase exactly as Maya wrote it and the time. "Change the words" opens a sheet with her text; Tempo never rewrites it.
+          6. Start fresh and Pause are quiet secondary choices at the bottom.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<div class="tp-app" data-component="TempoShell">
+  <!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+
+  <!-- ===== Rail · page tree ===== -->
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: string } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="plan.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-timeblock"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.plan">Plan</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dump">Brain dump</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+        <li><a class="tp-tree-item" href="coach-history.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-history"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.history">Chat history</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="lib-label" data-i18n="rail.library">Library</div>
+      <ul class="tp-tree" role="list" aria-labelledby="lib-label">
+        <li><a class="tp-tree-item" href="tasks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-checklist"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.tasks">Tasks</span></a></li>
+        <li><a class="tp-tree-item" href="calendar.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-calendar-grid"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.calendar">Calendar</span></a></li>
+        <li><a class="tp-tree-item" href="notes.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.notes">Notes</span></a></li>
+        <li><a class="tp-tree-item" href="journal.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.journal">Journal</span></a></li>
+        <li><a class="tp-tree-item" href="habits.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-habit"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.habits">Habits</span></a></li>
+        <li><a class="tp-tree-item" href="routines.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-list"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.routines">Routines</span></a></li>
+        <li><a class="tp-tree-item" href="goals.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.goals">Goals</span></a></li>
+        <li><a class="tp-tree-item" href="projects.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.projects">Projects</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="pages-label" data-i18n="rail.pages">Pages</div>
+      <ul class="tp-tree" role="list" aria-labelledby="pages-label">
+        <li><a class="tp-tree-item" href="weekly-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.week">Week 42</span></a></li>
+        <li>
+          <a class="tp-tree-item" href="project-detail.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.moving">Moving flat</span></a>
+          <ul class="tp-tree" role="list">
+            <li><a class="tp-tree-item" href="page-editor.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.weekend">Weekend reset</span></a></li>
+            <li><a class="tp-tree-item" href="page-editor.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.checklist">Moving checklist</span></a></li>
+          </ul>
+        </li>
+        <li><a class="tp-tree-item" href="page-blocks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.talk">Thursday talk</span></a></li>
+        <li><a class="tp-tree-item" href="new-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.newpage">New page</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="settings-profile.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- ===== Top bar (glass) ===== -->
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Habits', 'Walk 10 minutes'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <a href="habits.html" data-i18n="nav.habits">Habits</a>
+      <svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg>
+      <strong data-i18n="h.walk" dir="auto">Walk 10 minutes</strong>
+    </div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" aria-label="Search" data-i18n-attr="aria-label:top.search"><svg class="tp-icon" aria-hidden="true"><use href="#i-search"/></svg></button>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- ===== Main ===== -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <div class="tp-page" data-component="PageLayout">
+      <a class="tp-btn tp-btn--ghost" href="habits.html"><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg><span data-i18n="hd.back">All habits</span></a>
+
+      <!-- @component PageHeader | shadcn: — | props: { title: habit.name, subtitle: when + rhythm } | events: — -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" dir="auto" data-i18n="h.walk">Walk 10 minutes</h1>
+          <p class="tp-pagehead__sub" data-i18n="hd.sub">After lunch, most days.</p>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="st.offline">You're offline. Changes save when you're back.</span></span></div>
+
+      <div class="hd-stack" data-state-hide>
+        <!-- @component HabitBlock | shadcn: card + toggle | props: { habit: {id,name,loggedToday}, days: {date,done,today,future}[] (6 weeks) } | events: onLog -> habits.log({ habitId, date }) -->
+        <section class="tp-surface tp-block-habit" data-component="HabitBlock" aria-labelledby="hd-grid-title">
+          <div class="tp-habit hd-card" data-habit="walk" data-logged="false">
+            <div class="tp-habit__head">
+              <h2 class="tp-habit__name tp-h3" id="hd-grid-title" data-i18n="hd.grid">Last 6 weeks</h2>
+              <span class="tp-habit__when"><span data-i18n="hd.today">Today is</span> <span data-i18n="hd.date">Mon 12 Oct</span></span>
+              <!-- @component Button | shadcn: button + toggle | props: { variant: 'primary', pressed: loggedToday } | events: onClick -> habit-log -> habits.log -->
+              <button class="tp-btn tp-btn--primary tp-habit__log" type="button" data-action="habit-log" aria-pressed="false" data-component="Button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-label data-i18n="habit.log">Log today</span></button>
+            </div>
+
+            <div class="hd-grid" role="group" aria-labelledby="hd-grid-title">
+              <div class="hd-row" aria-hidden="true">
+                <span></span>
+                <ol class="tp-habit-days">
+                  <li class="tp-habit-day"><span class="tp-habit-day__label" data-i18n="dow.mon">Mon</span></li>
+                  <li class="tp-habit-day"><span class="tp-habit-day__label" data-i18n="dow.tue">Tue</span></li>
+                  <li class="tp-habit-day"><span class="tp-habit-day__label" data-i18n="dow.wed">Wed</span></li>
+                  <li class="tp-habit-day"><span class="tp-habit-day__label" data-i18n="dow.thu">Thu</span></li>
+                  <li class="tp-habit-day"><span class="tp-habit-day__label" data-i18n="dow.fri">Fri</span></li>
+                  <li class="tp-habit-day"><span class="tp-habit-day__label" data-i18n="dow.sat">Sat</span></li>
+                  <li class="tp-habit-day"><span class="tp-habit-day__label" data-i18n="dow.sun">Sun</span></li>
+                </ol>
+              </div>
+              <!-- Week rows ×6: each day = dot + date number + hidden full date and logged / not logged -->
+              <div class="hd-row" data-week="2026-09-07">
+                <span class="tp-small tp-muted"><span class="tp-num">7</span> <span data-i18n="mon.sep">Sep</span></span>
+                <ol class="tp-habit-days" aria-label="Week of 7 September" data-i18n-attr="aria-label:wk.sep7"></ol>
+              </div>
+              <div class="hd-row" data-week="2026-09-14">
+                <span class="tp-small tp-muted"><span class="tp-num">14</span> <span data-i18n="mon.sep">Sep</span></span>
+                <ol class="tp-habit-days" aria-label="Week of 14 September" data-i18n-attr="aria-label:wk.sep14"></ol>
+              </div>
+              <div class="hd-row" data-week="2026-09-21">
+                <span class="tp-small tp-muted"><span class="tp-num">21</span> <span data-i18n="mon.sep">Sep</span></span>
+                <ol class="tp-habit-days" aria-label="Week of 21 September" data-i18n-attr="aria-label:wk.sep21"></ol>
+              </div>
+              <div class="hd-row" data-week="2026-09-28">
+                <span class="tp-small tp-muted"><span class="tp-num">28</span> <span data-i18n="mon.sep">Sep</span></span>
+                <ol class="tp-habit-days" aria-label="Week of 28 September" data-i18n-attr="aria-label:wk.sep28"></ol>
+              </div>
+              <div class="hd-row" data-week="2026-10-05">
+                <span class="tp-small tp-muted"><span class="tp-num">5</span> <span data-i18n="mon.oct">Oct</span></span>
+                <ol class="tp-habit-days" aria-label="Week of 5 October" data-i18n-attr="aria-label:wk.oct5"></ol>
+              </div>
+              <div class="hd-row" data-week="2026-10-12">
+                <span class="tp-small tp-muted"><span class="tp-num">12</span> <span data-i18n="mon.oct">Oct</span></span>
+                <ol class="tp-habit-days" aria-label="This week" data-i18n-attr="aria-label:wk.this"></ol>
+              </div>
+            </div>
+
+            <!-- @component ChartSummary | shadcn: — | props: { text } | events: — -->
+            <p class="tp-habit__summary" role="status" id="hd-summary" data-component="ChartSummary"><span data-i18n="hd.sum1">You walked on</span> <span class="tp-num" id="hd-n">19</span> <span data-i18n="hd.sum2">of the last 36 days.</span> <span data-i18n="hd.sum3">Thursdays seem easiest. Today is still open.</span></p>
+          </div>
+        </section>
+
+        <!-- @component Section | shadcn: — | props: { title: 'Reminder, in your own words' } | events: — -->
+        <section class="tp-section" data-component="Section" aria-labelledby="hd-nag-title">
+          <div class="tp-section__head"><h2 class="tp-section__title" id="hd-nag-title" data-i18n="hd.nag">Reminder, in your own words</h2></div>
+          <!-- @component NagBlock | shadcn: card | props: { nag: {id, phrase, about, at} } | events: onEdit -> open-sheet nag-sheet -> nags.upsert -->
+          <div class="tp-block-nag" data-component="NagBlock">
+            <div class="tp-nag" data-status="pending">
+              <span class="tp-nag__label"><span data-i18n="hd.nag.at">Asks at</span> <span class="tp-num tp-mono" id="nag-time">13:30</span></span>
+              <p class="tp-nag__phrase" id="nag-phrase" dir="auto" data-i18n="nag.walk">Shoes on. Ten minutes. Then you can sit again.</p>
+              <span class="tp-nag__meta" data-i18n="hd.nag.meta">Your words, exactly as you wrote them. Tempo never rewrites them.</span>
+              <div class="tp-nag__actions">
+                <button class="tp-btn tp-btn--link" type="button" data-action="open-sheet" aria-controls="nag-sheet" aria-expanded="false"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="hd.nag.edit">Change the words</span></button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- @component Section | shadcn: — | props: { title: 'If it isn't fitting right now' } | events: onStartFresh -> habits.startFresh, onPause -> habits.pause -->
+        <section class="tp-section" data-component="Section" aria-labelledby="hd-more-title">
+          <div class="tp-section__head"><h2 class="tp-section__title" id="hd-more-title" data-i18n="hd.more">If it isn't fitting right now</h2></div>
+          <p class="tp-muted" data-i18n="hd.more.b">Habits change with your weeks. Both of these keep everything you've logged.</p>
+          <div class="hd-actions" id="hd-actions">
+            <button class="tp-btn tp-btn--secondary" type="button" id="hd-fresh"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="hb.fresh.start">Start fresh</span></button>
+            <button class="tp-btn tp-btn--ghost" type="button" id="hd-pause"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-pause"/></svg><span data-i18n="hd.pause">Pause this habit</span></button>
+          </div>
+          <p class="tp-muted tp-small" id="hd-note" tabindex="-1" hidden></p>
+        </section>
+      </div>
+
+      <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: onLog -> habits.log -->
+      <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-habit"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="hd.empty.t">Nothing logged yet. That's how every habit starts.</h2>
+        <p class="tp-state__body" data-i18n="hd.empty.b">When you do it, come back and log it. The circles fill in as you go.</p>
+        <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="habits.html"><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg><span data-i18n="hd.back">All habits</span></a></div>
+      </div>
+      <!-- @component StateLoading | shadcn: skeleton | props: { rows: 6 } | events: — -->
+      <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+        <span class="tp-sr-only" data-i18n="hd.loading">Loading this habit</span>
+        <div class="tp-skel-list">
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span></span></div>
+        </div>
+      </div>
+      <!-- @component StateError | shadcn: alert | props: { what } | events: onRetry -> refetch -->
+      <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="hd.error">Couldn't load this habit.</h2>
+        <p class="tp-state__body" data-i18n="st.safe">Your data is safe.</p>
+        <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== Reminder sheet (glass, floating) ===== -->
+  <div class="tp-sheet-scrim" data-for="nag-sheet" data-action="close-sheet" hidden></div>
+  <!-- @component MobileSheet | shadcn: sheet (bottom) / drawer | props: { id: 'nag-sheet', title: 'Your reminder' } | events: onOpenChange, onSubmit -> nags.upsert({ habitId, phrase, time }) -->
+  <section class="tp-sheet tp-glass" id="nag-sheet" role="dialog" aria-labelledby="ns-title" data-component="MobileSheet" hidden>
+    <div class="tp-sheet__grabber" aria-hidden="true"></div>
+    <div class="tp-sheet__head">
+      <h2 class="tp-sheet__title" id="ns-title" data-i18n="ns.title">Your reminder</h2>
+      <button class="tp-btn tp-btn--ghost tp-btn--icon tp-sheet__close" type="button" data-action="close-sheet" aria-label="Close" data-i18n-attr="aria-label:sheet.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="tp-sheet__body">
+      <!-- @component Form | shadcn: form | props: { fields: phrase, time } | events: onSubmit -> nags.upsert -->
+      <form class="hd-form" id="ns-form" data-component="Form" novalidate>
+        <!-- @component Field | shadcn: form item | props: { id: 'ns-phrase', label, help, error } | events: — -->
+        <div class="tp-field" data-component="Field">
+          <label class="tp-label" for="ns-phrase" data-i18n="ns.phrase">What should it say?</label>
+          <!-- @component Textarea | shadcn: textarea | props: { rows: 3 } | events: — -->
+          <textarea class="tp-textarea" id="ns-phrase" rows="3" dir="auto" aria-describedby="ns-help ns-error" data-component="Textarea">Shoes on. Ten minutes. Then you can sit again.</textarea>
+          <p class="tp-help" id="ns-help" data-i18n="ns.help">Write it the way you'd say it to a friend. It shows exactly like this.</p>
+          <p class="tp-error-text" id="ns-error" hidden data-i18n="ns.err">Write a few words, so the reminder has something to say.</p>
+        </div>
+        <!-- @component Field | shadcn: form item | props: { id: 'ns-time', label: 'When should it ask?' } | events: — -->
+        <div class="tp-field" data-component="Field">
+          <label class="tp-label" for="ns-time" data-i18n="ns.time">When should it ask?</label>
+          <input class="tp-input tp-num" id="ns-time" type="time" value="13:30" step="300" dir="ltr">
+        </div>
+      </form>
+    </div>
+    <div class="tp-sheet__foot">
+      <button class="tp-btn tp-btn--secondary" type="submit" form="ns-form"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="ns.save">Save reminder</span></button>
+      <button class="tp-btn tp-btn--ghost" type="button" data-action="close-sheet"><span data-i18n="ns.cancel">Cancel</span></button>
+    </div>
+  </section>
+
+  <!-- ===== Coach (closed) ===== -->
+  <!-- @component CoachButton | shadcn: button + sheet trigger | props: — | events: onOpen -> open-coach (Ctrl J) -->
+  <button class="tp-coach-fab tp-glass" type="button" data-action="open-coach" aria-expanded="false" aria-controls="coach" data-component="CoachButton" aria-label="Open coach (Ctrl J)" data-i18n-attr="aria-label:coach.open">
+    <svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-coach-fab__label" data-i18n="coach.name">Coach</span>
+  </button>
+  <!-- @component CoachPanel | shadcn: sheet | props: { open: boolean } | events: onClose -> close-coach, Esc -->
+  <aside class="tp-coach-panel tp-glass" id="coach" data-component="CoachPanel" aria-labelledby="coach-title" hidden>
+    <div class="tp-coach-panel__head">
+      <div class="tp-coach-panel__title"><strong id="coach-title" data-i18n="coach.name">Coach</strong><span data-i18n="coach.sub">Reads this page. Asks before changing anything.</span></div>
+      <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="close-coach" aria-label="Close coach" data-i18n-attr="aria-label:coach.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="tp-coach-thread" role="log" aria-live="polite">
+      <!-- @component CoachMessage | shadcn: scroll-area | props: { who: 'coach', text } | events: — -->
+      <div class="tp-msg" data-component="CoachMessage"><span class="tp-msg__who" data-i18n="coach.name">Coach</span><p class="tp-msg__text" dir="auto" data-i18n="hd.coach">Thursdays work well for this one. Want to keep 13:30 on busy days, or move the reminder to after your last meeting?</p></div>
+    </div>
+    <!-- @component Composer | shadcn: textarea + button | props: — | events: onSend -> coach.send({ threadId, text }) -->
+    <form class="tp-composer" data-component="Composer" onsubmit="return false">
+      <label class="tp-sr-only" for="composer" data-i18n="composer.label">Message the coach</label>
+      <div class="tp-composer__box">
+        <textarea class="tp-composer__input" id="composer" rows="2" dir="auto" placeholder="Ask, plan, or think out loud" data-i18n-attr="placeholder:composer.ph"></textarea>
+        <div class="tp-composer__bar">
+          <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="voice-call.html" aria-label="Talk with voice" data-i18n-attr="aria-label:composer.voice"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mic"/></svg></a>
+          <button class="tp-btn tp-btn--sm tp-btn--icon tp-composer__send" type="submit" aria-label="Send" data-i18n-attr="aria-label:composer.send"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-send"/></svg></button>
+        </div>
+      </div>
+    </form>
+  </aside>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title, countdown: 5:00 } | events: onUndo -> nags.upsert (previous words) -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- ===== Mobile tab bar (glass) ===== -->
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: 'more' } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="notes.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="tab.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "toast.title": "Done",
+    "toast.sub": "You can undo for",
+    "toast.undo": "Undo",
+    "toast.dismiss": "Dismiss",
+    "state.retried": "Loaded.",
+    "habit.logged": "Logged today",
+    "habit.log": "Log today",
+    "habit.dayDone": "logged",
+    "habit.dayOpen": "not logged",
+    "hd.sum3.done": "Thursdays seem easiest. Today is logged.",
+    "hd.sum3": "Thursdays seem easiest. Today is still open.",
+    "hd.fresh.done": "Fresh start from today. Your older days are still here if you want them.",
+    "hd.paused": "Paused. No reminders and no counting until you turn it back on.",
+    "ns.saved": "Reminder saved in your words"
+  },
+  he: {
+    "skip": "דלגו לתוכן",
+    "rail.label": "דפים",
+    "rail.search": "חיפוש או מעבר אל",
+    "rail.library": "ספרייה",
+    "rail.pages": "דפים",
+    "nav.today": "היום",
+    "nav.plan": "תכנון",
+    "nav.dump": "פריקת מחשבות",
+    "nav.coach": "מאמן",
+    "nav.history": "היסטוריית שיחות",
+    "nav.tasks": "משימות",
+    "nav.calendar": "לוח שנה",
+    "nav.notes": "פתקים",
+    "nav.journal": "יומן",
+    "nav.habits": "הרגלים",
+    "nav.routines": "שגרות",
+    "nav.goals": "מטרות",
+    "nav.projects": "פרויקטים",
+    "nav.week": "שבוע 42",
+    "nav.moving": "מעבר דירה",
+    "nav.weekend": "איפוס סוף שבוע",
+    "nav.checklist": "רשימת המעבר",
+    "nav.talk": "הרצאה ביום חמישי",
+    "nav.newpage": "דף חדש",
+    "nav.dyslexia": "גופן קריאה",
+    "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים",
+    "top.search": "חיפוש",
+    "top.theme": "ערכת צבעים כהה",
+    "top.avatar": "מאיה רונן",
+    "coach.open": "פתיחת המאמן (Ctrl J)",
+    "coach.name": "מאמן",
+    "coach.sub": "קורא את הדף הזה. שואל לפני כל שינוי.",
+    "coach.close": "סגירת המאמן",
+    "composer.label": "הודעה למאמן",
+    "composer.ph": "לשאול, לתכנן, או לחשוב בקול",
+    "composer.voice": "לדבר בקול",
+    "composer.send": "שליחה",
+    "tab.label": "ראשי",
+    "tab.tasks": "משימות",
+    "tab.pages": "דפים",
+    "tab.cal": "לוח שנה",
+    "tab.more": "עוד",
+    "st.offline": "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.",
+    "st.safe": "המידע שלך שמור.",
+    "st.retry": "לנסות שוב",
+    "toast.title": "בוצע",
+    "toast.sub": "אפשר לבטל עוד",
+    "toast.undo": "ביטול",
+    "toast.dismiss": "סגירה",
+    "state.retried": "נטען.",
+    "sheet.close": "סגירה",
+    "habit.logged": "נרשם היום",
+    "habit.log": "לרשום להיום",
+    "habit.dayDone": "נרשם",
+    "habit.dayOpen": "לא נרשם",
+    "dow.mon": "ב׳",
+    "dow.tue": "ג׳",
+    "dow.wed": "ד׳",
+    "dow.thu": "ה׳",
+    "dow.fri": "ו׳",
+    "dow.sat": "ש׳",
+    "dow.sun": "א׳",
+    "mon.sep": "בספט׳",
+    "mon.oct": "באוק׳",
+    "wk.sep7": "השבוע של 7 בספטמבר",
+    "wk.sep14": "השבוע של 14 בספטמבר",
+    "wk.sep21": "השבוע של 21 בספטמבר",
+    "wk.sep28": "השבוע של 28 בספטמבר",
+    "wk.oct5": "השבוע של 5 באוקטובר",
+    "wk.this": "השבוע הזה",
+    "doc.title": "הליכה של 10 דקות · הרגלים · Tempo",
+    "h.walk": "הליכה של 10 דקות",
+    "hd.back": "כל ההרגלים",
+    "hd.sub": "אחרי ארוחת הצהריים, ברוב הימים.",
+    "hd.grid": "6 השבועות האחרונים",
+    "hd.today": "היום:",
+    "hd.date": "יום ב׳, 12 באוק׳",
+    "hd.sum1": "הלכת ב־",
+    "hd.sum2": "מתוך 36 הימים האחרונים.",
+    "hd.sum3": "נראה שימי חמישי הכי קלים. היום עוד פתוח.",
+    "hd.sum3.done": "נראה שימי חמישי הכי קלים. היום נרשם.",
+    "hd.nag": "תזכורת, במילים שלך",
+    "hd.nag.at": "שואלת ב־",
+    "hd.nag.meta": "המילים שלך, בדיוק כמו שכתבת אותן. Tempo אף פעם לא משנה אותן.",
+    "hd.nag.edit": "לשנות את המילים",
+    "hd.more": "אם זה לא מתאים כרגע",
+    "hd.more.b": "הרגלים משתנים עם השבועות. שתי האפשרויות שומרות את כל מה שרשמת.",
+    "hb.fresh.start": "להתחיל מחדש",
+    "hd.pause": "להשהות את ההרגל",
+    "hd.fresh.done": "התחלה חדשה מהיום. הימים הקודמים עדיין כאן אם תרצי בהם.",
+    "hd.paused": "מושהה. אין תזכורות ואין ספירה עד שתפעילי אותו שוב.",
+    "hd.empty.t": "עוד לא נרשם כלום. ככה כל הרגל מתחיל.",
+    "hd.empty.b": "כשתעשי את זה, אפשר לחזור ולרשום. העיגולים מתמלאים תוך כדי.",
+    "hd.loading": "טוען את ההרגל",
+    "hd.error": "לא הצלחנו לטעון את ההרגל.",
+    "hd.coach": "ימי חמישי עובדים טוב להרגל הזה. רוצה להשאיר את 13:30 גם בימים עמוסים, או להעביר את התזכורת לאחרי הפגישה האחרונה?",
+    "ns.title": "התזכורת שלך",
+    "ns.phrase": "מה היא צריכה להגיד?",
+    "ns.help": "כדאי לכתוב כמו שהיית אומרת לחברה. זה יופיע בדיוק ככה.",
+    "ns.err": "כדאי לכתוב כמה מילים, כדי שלתזכורת יהיה מה להגיד.",
+    "ns.time": "מתי לשאול?",
+    "ns.save": "שמירת התזכורת",
+    "ns.cancel": "ביטול",
+    "ns.saved": "התזכורת נשמרה במילים שלך",
+    "nag.walk": "נעליים. עשר דקות. אחר כך אפשר לשבת שוב."
+  }
+};
+TP_STRINGS.en["hd.date"] = "Mon 12 Oct";
+/* Habit detail: 6-week grid, log today, reminder in her words. */
+TP.onReady2 = function () {
+  var lang = document.documentElement.lang === "he" ? "he" : "en";
+  // REAL: convex habits.listDays({ habitId, from: "2026-09-07", to: localDate() }) — 1 = logged, 0 = not logged, null = after today.
+  var weeks = {
+    "2026-09-07": [1, 0, 1, 1, 0, 1, 0],
+    "2026-09-14": [1, 1, 0, 1, 0, 0, 1],
+    "2026-09-21": [0, 1, 1, 1, 0, 1, 0],
+    "2026-09-28": [1, 0, 1, 1, 1, 0, 0],
+    "2026-10-05": [0, 0, 1, 1, 0, 1, 0],
+    "2026-10-12": [0, null, null, null, null, null, null]
+  };
+  var today = "2026-10-12";
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+  function iso(d) { var m = d.getMonth() + 1, day = d.getDate(); return d.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (day < 10 ? "0" : "") + day; }
+  function longDate(d) { return d.toLocaleDateString(lang === "he" ? "he-IL" : "en-GB", { weekday: "long", day: "numeric", month: "long" }); }
+  document.querySelectorAll(".hd-row[data-week]").forEach(function (row) {
+    var start = new Date(row.getAttribute("data-week") + "T12:00:00"), ol = row.querySelector("ol");
+    weeks[row.getAttribute("data-week")].forEach(function (v, i) {
+      var d = new Date(start); d.setDate(start.getDate() + i);
+      var li = el("li", "tp-habit-day");
+      if (v === null) { li.setAttribute("aria-hidden", "true"); li.appendChild(el("span", "tp-habit-day__label tp-num", String(d.getDate()))); ol.appendChild(li); return; }
+      li.setAttribute("data-done", String(!!v));
+      if (iso(d) === today) li.setAttribute("data-today", "true");
+      var dot = el("span", "tp-habit-day__dot"); dot.setAttribute("aria-hidden", "true");
+      dot.innerHTML = '<svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg>';
+      var lab = el("span", "tp-habit-day__label tp-num", String(d.getDate())); lab.setAttribute("aria-hidden", "true");
+      var sr = el("span", "tp-sr-only", longDate(d) + ", " + TP.t(v ? "habit.dayDone" : "habit.dayOpen"));
+      li.appendChild(dot); li.appendChild(lab); li.appendChild(sr); ol.appendChild(li);
+    });
+  });
+  // REAL: convex habits.log({ habitId: "walk", date: localDate() }) — tempo.js fills today's circle; the sentence stays in step.
+  var base = 19;
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest('[data-action="habit-log"]')) return;
+    setTimeout(function () {
+      var on = document.querySelector(".tp-habit").getAttribute("data-logged") === "true";
+      document.getElementById("hd-n").textContent = base + (on ? 1 : 0);
+      var s3 = document.querySelector('#hd-summary [data-i18n^="hd.sum3"]'); s3.textContent = TP.t(on ? "hd.sum3.done" : "hd.sum3");
+      var sr = document.querySelector('.tp-habit-day[data-today="true"] .tp-sr-only');
+      if (sr) sr.textContent = longDate(new Date(today + "T12:00:00")) + ", " + TP.t(on ? "habit.dayDone" : "habit.dayOpen");
+    }, 0);
+  });
+  // REAL: convex nags.upsert({ habitId: "walk", phrase, time }) — saved exactly as typed; Undo restores the old words.
+  var form = document.getElementById("ns-form"), ta = document.getElementById("ns-phrase"), err = document.getElementById("ns-error");
+  if (lang === "he") ta.value = TP.t("nag.walk");
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var text = ta.value.trim();
+    if (!text) { err.hidden = false; ta.setAttribute("aria-invalid", "true"); ta.focus(); return; }
+    err.hidden = true; ta.removeAttribute("aria-invalid");
+    var p = document.getElementById("nag-phrase"), t = document.getElementById("nag-time");
+    var old = { p: p.textContent, t: t.textContent };
+    p.textContent = text; t.textContent = document.getElementById("ns-time").value || old.t;
+    TP.closeSheet(document.getElementById("nag-sheet"));
+    TP.toast({ title: TP.t("ns.saved"), onUndo: function () { p.textContent = old.p; t.textContent = old.t; ta.value = old.p; } });
+  });
+  var note = document.getElementById("hd-note");
+  function answer(key) { document.getElementById("hd-actions").hidden = true; note.textContent = TP.t(key); note.hidden = false; note.focus({ preventScroll: true }); }
+  // REAL: convex habits.startFresh({ habitId: "walk" })
+  document.getElementById("hd-fresh").addEventListener("click", function () { answer("hd.fresh.done"); });
+  // REAL: convex habits.pause({ habitId: "walk" })
+  document.getElementById("hd-pause").addEventListener("click", function () { answer("hd.paused"); });
+};
+</script>
+</body>
+</html>

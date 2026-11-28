@@ -1,0 +1,95 @@
+/* v3 /coach chat polish (Kitchen, owner-approved): the chats column and its drawer, the chat header, the starter cards, Copy and the
+   follow-ups under a reply, the day dividers and the waiting line. Layout only; colour, type, spacing and radius come from tokens.
+   Logical properties throughout, so Hebrew mirrors. The panel and Today's chat use none of these classes. */
+
+/* ---- Layout: chats column + chat ------------------------------------------------ */
+.tp-coach-layout { display: grid; gap: var(--tp-space-4); min-width: 0; }
+.tp-coach-layout > .tp-coach-page { min-width: 0; container-type: inline-size; }
+
+/* ---- Chats column (CoachThreads) ------------------------------------------------ */
+.tp-coach-threads { display: flex; flex-direction: column; gap: var(--tp-space-3); min-width: 0; min-height: 0; }
+.tp-coach-threads__head { display: flex; align-items: center; gap: var(--tp-space-2); min-height: 36px; padding-inline: var(--tp-space-1); }
+.tp-coach-threads__title { flex: 1 1 auto; min-width: 0; font-size: var(--tp-text-lg); }
+.tp-coach-threads__error { color: var(--tp-danger); }
+.tp-coach-threads__status { display: block; padding-inline: var(--tp-space-1); }
+.tp-coach-threads__status:empty { display: none; }
+.tp-coach-threads__scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin-inline: calc(-1 * var(--tp-space-1)); padding: var(--tp-space-1); }
+.tp-coach-threads__note { padding: var(--tp-space-2) var(--tp-space-3); }
+.tp-coach-threads__item { position: relative; display: grid; }
+.tp-coach-threads__row { width: 100%; border: 0; background: transparent; text-align: start; font: inherit; }
+.tp-coach-threads__item > .tp-coach-threads__row { padding-inline-end: calc(36px + var(--tp-space-2)); }
+.tp-coach-threads__row[aria-current="true"] { background: var(--tp-paper); box-shadow: var(--tp-shadow-card); }
+@media (hover: hover) { .tp-coach-threads__row:hover:not([aria-current="true"]) { background: var(--tp-hover); } }
+.tp-coach-threads__row:focus-visible { border-radius: var(--tp-radius-md); }
+.tp-coach-threads__delete { position: absolute; inset-block-start: var(--tp-space-1); inset-inline-end: var(--tp-space-1); color: var(--tp-ink-muted); }
+.tp-coach-threads__confirm { display: grid; gap: var(--tp-space-2); margin-block: var(--tp-space-1) var(--tp-space-2); padding: var(--tp-space-3); border-radius: var(--tp-radius-md); background: var(--tp-paper); border: 1px solid var(--tp-line-strong); }
+.tp-coach-threads__confirm-actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+
+/* ---- Chat header (CoachChatHeader) ---------------------------------------------- */
+.tp-coach-chathead { display: flex; align-items: center; gap: var(--tp-space-2); min-height: calc(var(--tp-touch) + var(--tp-space-2)); padding: var(--tp-space-1) var(--tp-space-3); border-bottom: 1px solid var(--tp-line); }
+.tp-coach-chathead__title { flex: 1 1 auto; min-width: 0; font-size: var(--tp-text-sm); font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* 1024 px and up: the chats sit in a column beside the chat, on the ground, as tall as the chat. */
+@media (min-width: 1024px) {
+  .tp-coach-layout { grid-template-columns: calc(var(--tp-space-20) * 2.5) minmax(0, 1fr); align-items: start; }
+  .tp-coach-threads { height: clamp(360px, calc(100dvh - var(--tp-topbar-h) - 240px), 760px); padding-block-start: var(--tp-space-2); }
+  .tp-coach-threads-scrim, .tp-coach-chathead__chats, .tp-coach-chathead__new { display: none; }
+  .tp-coach-chathead { padding-inline: var(--tp-space-5); }
+}
+
+/* With room to spare the column widens a little. */
+@media (min-width: 1440px) {
+  .tp-coach-layout { grid-template-columns: calc(var(--tp-space-20) * 3) minmax(0, 1fr); }
+}
+
+/* Under 1024 px: a drawer from the inline-start edge, over a scrim; the chat header's Chats button opens it. */
+@media (max-width: 1023px) {
+  .tp-coach-threads { display: none; }
+  .tp-coach-threads[data-open="true"] {
+    display: flex; position: fixed; inset-block: 0; inset-inline-start: 0; z-index: 71;
+    width: min(calc(var(--tp-space-20) * 4), 86vw);
+    padding: var(--tp-space-4) var(--tp-space-3) calc(var(--tp-space-4) + env(safe-area-inset-bottom, 0px));
+    background-color: var(--tp-ground); background-image: var(--tp-grain); background-size: 180px 180px;
+    box-shadow: var(--tp-shadow-modal);
+    animation: tp-slide-in-rtl var(--tp-dur-slow) var(--tp-ease-out);
+  }
+  [dir="rtl"] .tp-coach-threads[data-open="true"] { animation-name: tp-slide-in; }
+  .tp-coach-threads-scrim { position: fixed; inset: 0; z-index: 70; background: var(--tp-scrim); animation: tp-fade var(--tp-dur-base) var(--tp-ease-out); }
+}
+
+/* ---- Empty chat: starter cards (CoachStarters) ----------------------------------- */
+.tp-coach-start { display: grid; justify-items: center; gap: var(--tp-space-3); padding-block: var(--tp-space-6) var(--tp-space-2); text-align: center; }
+.tp-coach-start__title { font-size: var(--tp-text-xl); }
+.tp-coach-starters { list-style: none; margin: var(--tp-space-2) 0 0; padding: 0; width: 100%; max-width: calc(var(--tp-space-20) * 7); display: grid; gap: var(--tp-space-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--tp-space-20) * 1.75)), 1fr)); }
+.tp-coach-starters > li { display: grid; min-width: 0; }
+.tp-coach-starter {
+  display: grid; gap: var(--tp-space-1); align-content: start; height: 100%;
+  padding: var(--tp-space-3) var(--tp-space-4); border: 1px solid var(--tp-line-card); border-radius: var(--tp-radius-lg);
+  background: var(--tp-paper); color: var(--tp-ink); box-shadow: var(--tp-shadow-raise); text-align: start;
+  transition: transform var(--tp-dur-base) var(--tp-ease-out), box-shadow var(--tp-dur-base) var(--tp-ease-out);
+}
+.tp-coach-starter__label { font-weight: 600; }
+.tp-coach-starter__hint { font-size: var(--tp-text-sm); color: var(--tp-ink-muted); }
+.tp-coach-starter:focus-visible { border-radius: var(--tp-radius-lg); }
+.tp-coach-starter[disabled] { cursor: not-allowed; opacity: 0.6; }
+@media (hover: hover) { .tp-coach-starter:hover:not([disabled]) { transform: translateY(-1px); box-shadow: var(--tp-shadow-lift); } }
+
+/* ---- Under a reply: Copy, then the follow-ups under the newest one --------------- */
+.tp-coach-msg-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); margin-block-start: calc(-1 * var(--tp-space-3)); }
+.tp-coach-copy { color: var(--tp-ink-muted); padding-inline: var(--tp-space-2); }
+.tp-coach-followups { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+.tp-coach-followups > li { display: flex; min-width: 0; }
+.tp-coach-followup { border-radius: var(--tp-radius-pill); white-space: normal; text-align: start; padding-block: var(--tp-space-1); }
+.tp-coach-followup .tp-icon { color: var(--tp-ink-muted); }
+.tp-coach-followup:focus-visible { border-radius: var(--tp-radius-pill); }
+
+/* ---- Day dividers and the waiting line ------------------------------------------ */
+.tp-coach-day { display: flex; align-items: center; gap: var(--tp-space-3); font-size: var(--tp-text-xs); font-weight: 600; color: var(--tp-ink-muted); }
+.tp-coach-day::before, .tp-coach-day::after { content: ""; flex: 1 1 0; border-block-start: 1px solid var(--tp-line); }
+.tp-coach-day > span { unicode-bidi: isolate; }
+.tp-coach-working { display: grid; gap: var(--tp-space-1); }
+
+/* A narrow chat (the column beside it at 1280 px, or a phone) drops the keyboard hint so the buttons keep their room. */
+@container (max-width: 480px) {
+  .tp-coach-page .tp-composer__bar > .tp-muted { display: none; }
+}

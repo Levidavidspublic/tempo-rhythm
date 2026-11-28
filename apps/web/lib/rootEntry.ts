@@ -1,3 +1,5 @@
+import type { DataBackend } from "./backend-flag";
+
 /**
  * Default entry for "/".
  *
@@ -19,15 +21,43 @@ export const PUBLIC_ROUTE_PATTERNS = [
   "/privacy",
   "/contact",
   "/success",
+  // Coming-soon page and the two routes it needs (design export: public-coming-soon.html).
+  "/coming-soon",
+  "/api/waitlist",
+  // Whop signs this request; the signature authenticates it, not the session cookie.
+  "/api/whop/webhook",
   "/api/health",
+  // The per-user MCP token authenticates this route, not the session cookie.
+  "/api/mcp",
 ] as const;
+
+export const CALENDAR_E2E_BYPASS_OPTION = "isCalendarE2EBypass";
+
+export function isInsforgeRefreshRequest(
+  pathname: string,
+  method: string,
+  backend: DataBackend
+): boolean {
+  return backend === "insforge" && pathname === "/api/auth/insforge/refresh" && method === "POST";
+}
+
+export async function hasAuthenticatedEntrySession(
+  verifyConvex: () => Promise<boolean>,
+  verifyInsforge?: () => Promise<boolean>
+): Promise<boolean> {
+  try {
+    return (await verifyConvex()) && (!verifyInsforge || (await verifyInsforge()));
+  } catch {
+    return false;
+  }
+}
 
 export function decideEntryRedirect(input: {
   pathname: string;
   search: string;
   isAuthenticated: boolean;
   isPublicRoute: boolean;
-  isCalendarE2EBypass: boolean;
+  [CALENDAR_E2E_BYPASS_OPTION]: boolean;
 }): string | null {
   const query = input.search.startsWith("?") ? input.search.slice(1) : input.search;
   const code = new URLSearchParams(query).get("code");
@@ -43,7 +73,7 @@ export function decideEntryRedirect(input: {
     return null;
   }
 
-  if (!(input.isPublicRoute || input.isCalendarE2EBypass || input.isAuthenticated)) {
+  if (!(input.isPublicRoute || input[CALENDAR_E2E_BYPASS_OPTION] || input.isAuthenticated)) {
     const nextPath = `${input.pathname}${input.search}`;
     const params = new URLSearchParams({ next: nextPath });
     return `/sign-in?${params.toString()}`;

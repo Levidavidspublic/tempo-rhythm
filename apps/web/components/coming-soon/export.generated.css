@@ -1,0 +1,858 @@
+/* biome-ignore-all lint/complexity/noImportantStyles: the export's own reduced-motion and fallback rules */
+/* biome-ignore-all lint/correctness/noUnknownMediaFeatureName: prefers-reduced-transparency is a real media feature */
+/* The coming-soon page's stylesheet from the design export (public-coming-soon.html), scoped to .tf-page.
+   Colours are the export's tokens. Change the design in the export first, then here. */
+.tf-page {
+  margin: 0;
+  background: var(--tp-ground);
+}
+.tf-page a {
+  color: var(--tp-accent);
+}
+.tf-page a:hover {
+  color: var(--tp-ink);
+}
+.tf-page .tf-arm {
+  transform-box: view-box;
+  transform-origin: 100px 158px;
+}
+.tf-page .tf-body {
+  transform-box: view-box;
+  transform-origin: 100px 222px;
+}
+.tf-page .tf-arm--steady {
+  animation: tf-settle 3.2s cubic-bezier(0.2, 0.8, 0.2, 1) 1 both;
+}
+.tf-page .tf-arm--wobbly {
+  animation: tf-tip 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) 1 both;
+}
+.tf-page .tf-body--wobbly {
+  animation: tf-shake 0.35s ease-in-out 4 alternate both;
+}
+.tf-page .tf-root:hover .tf-arm--steady {
+  animation-name: tf-settle2;
+}
+@keyframes tf-settle {
+  0% {
+    transform: rotate(-18deg);
+  }
+  22% {
+    transform: rotate(13deg);
+  }
+  44% {
+    transform: rotate(-8deg);
+  }
+  64% {
+    transform: rotate(4deg);
+  }
+  82% {
+    transform: rotate(-1.5deg);
+  }
+  100% {
+    transform: rotate(0);
+  }
+}
+@keyframes tf-settle2 {
+  0% {
+    transform: rotate(-18deg);
+  }
+  22% {
+    transform: rotate(13deg);
+  }
+  44% {
+    transform: rotate(-8deg);
+  }
+  64% {
+    transform: rotate(4deg);
+  }
+  82% {
+    transform: rotate(-1.5deg);
+  }
+  100% {
+    transform: rotate(0);
+  }
+}
+@keyframes tf-tip {
+  0% {
+    transform: rotate(30deg);
+  }
+  20% {
+    transform: rotate(-30deg);
+  }
+  40% {
+    transform: rotate(28deg);
+  }
+  60% {
+    transform: rotate(-26deg);
+  }
+  80% {
+    transform: rotate(-20deg);
+  }
+  100% {
+    transform: rotate(-22deg);
+  }
+}
+@keyframes tf-swing {
+  from {
+    transform: rotate(-16deg);
+  }
+  to {
+    transform: rotate(16deg);
+  }
+}
+@keyframes tf-swing-fast {
+  from {
+    transform: rotate(-30deg);
+  }
+  to {
+    transform: rotate(30deg);
+  }
+}
+.tf-page .tf-sweat {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  animation: tf-drip 1.6s ease-in 3 both;
+}
+.tf-page .tf-sweat.s2 {
+  animation-delay: 0.35s;
+}
+.tf-page .tf-sweat.s3 {
+  animation-delay: 0.7s;
+}
+@keyframes tf-drip {
+  0% {
+    transform: translateY(-4px) scale(0.6);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  70% {
+    transform: translateY(20px) scale(1);
+    opacity: 0;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+.tf-page .tf-stress {
+  animation: tf-flick 0.5s steps(2) 6 both;
+}
+@keyframes tf-flick {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.15;
+  }
+}
+@keyframes tf-shake {
+  from {
+    transform: rotate(-1.5deg);
+  }
+  to {
+    transform: rotate(1.5deg);
+  }
+}
+.tf-page .tf-petal {
+  animation: tf-drift 14s linear infinite;
+  opacity: 0;
+}
+.tf-page .tf-petal.p2 {
+  animation-delay: -4s;
+  animation-duration: 17s;
+}
+.tf-page .tf-petal.p3 {
+  animation-delay: -9s;
+  animation-duration: 19s;
+}
+.tf-page .tf-petal.p4 {
+  animation-delay: -12s;
+  animation-duration: 15s;
+}
+@keyframes tf-drift {
+  0% {
+    transform: translate(0, -20px) rotate(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-160px, 520px) rotate(220deg);
+    opacity: 0;
+  }
+}
+.tf-page .tf-still .tf-arm,
+.tf-page .tf-still .tf-body,
+.tf-page .tf-still .tf-petal,
+.tf-page .tf-still .tf-sweat,
+.tf-page .tf-still .tf-stress {
+  animation: none;
+}
+.tf-page .tf-still .tf-sweat {
+  opacity: 1;
+}
+.tf-page .tf-still .tf-petal {
+  opacity: 0.8;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tf-page .tf-arm,
+  .tf-page .tf-body,
+  .tf-page .tf-petal,
+  .tf-page .tf-sweat,
+  .tf-page .tf-stress {
+    animation: none !important;
+  }
+  .tf-page .tf-petal {
+    opacity: 0.8;
+  }
+  .tf-page .tf-sweat {
+    opacity: 1;
+  }
+}
+.tf-page input:focus-visible,
+.tf-page button:focus-visible,
+.tf-page a:focus-visible {
+  outline: 2px solid var(--tp-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .tf-page .tf-chip {
+    left: 2% !important;
+  }
+}
+.tf-page .tf-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(48px);
+  pointer-events: none;
+}
+.tf-page .tf-float {
+  animation: tf-bob 11s ease-in-out infinite alternate;
+}
+.tf-page .tf-float.f2 {
+  animation-duration: 14s;
+  animation-delay: -5s;
+}
+.tf-page .tf-float.f3 {
+  animation-duration: 17s;
+  animation-delay: -9s;
+}
+@keyframes tf-bob {
+  from {
+    transform: translate3d(0, -4px, 0);
+  }
+  to {
+    transform: translate3d(0, 5px, 0);
+  }
+}
+.tf-page .tf-par {
+  animation: tf-par linear both;
+  animation-timeline: scroll(root);
+  animation-range: 0 900px;
+}
+.tf-page .tf-par.d1 {
+  --d: -40px;
+}
+.tf-page .tf-par.d2 {
+  --d: -90px;
+}
+.tf-page .tf-par.d3 {
+  --d: -150px;
+}
+.tf-page .tf-par.d0 {
+  --d: 30px;
+}
+@keyframes tf-par {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(var(--d, 0));
+  }
+}
+.tf-page .tf-reveal {
+  animation: tf-in linear both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 60%;
+}
+@keyframes tf-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.tf-page .tf-tilt {
+  transition:
+    transform 240ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 240ms ease;
+}
+.tf-page .tf-tilt:hover {
+  transform: perspective(900px) rotateX(4deg) rotateY(-5deg) translateY(-4px);
+  box-shadow: 0 30px 50px -26px rgba(31, 58, 95, 0.45);
+}
+.tf-page .tf-step-in {
+  animation: tf-step 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.tf-page .tf-step-in.s2 {
+  animation-delay: 0.18s;
+}
+.tf-page .tf-step-in.s3 {
+  animation-delay: 0.36s;
+}
+.tf-page .tf-step-in.s4 {
+  animation-delay: 0.54s;
+}
+@keyframes tf-step {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.tf-page .tf-bar {
+  display: inline-block;
+  width: 4px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--tp-accent);
+  animation: tf-eq 1.1s ease-in-out 4 alternate both;
+}
+.tf-page .tf-bar.b2 {
+  animation-delay: -0.3s;
+}
+.tf-page .tf-bar.b3 {
+  animation-delay: -0.6s;
+}
+.tf-page .tf-bar.b4 {
+  animation-delay: -0.15s;
+}
+.tf-page .tf-bar.b5 {
+  animation-delay: -0.45s;
+}
+@keyframes tf-eq {
+  from {
+    height: 6px;
+  }
+  to {
+    height: 22px;
+  }
+}
+.tf-page .tf-tab {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(28, 27, 25, 0.25);
+  background: rgba(255, 255, 255, 0.5);
+  font-family: "Source Sans 3", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tp-ink);
+  cursor: pointer;
+}
+.tf-page .tf-tab[aria-selected="true"] {
+  background: var(--tp-accent);
+  color: var(--tp-on-accent);
+  border-color: var(--tp-accent);
+}
+.tf-page .tf-still .tf-float,
+.tf-page .tf-still .tf-par,
+.tf-page .tf-still .tf-reveal,
+.tf-page .tf-still .tf-step-in,
+.tf-page .tf-still .tf-bar {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tf-page .tf-float,
+  .tf-page .tf-par,
+  .tf-page .tf-reveal,
+  .tf-page .tf-step-in,
+  .tf-page .tf-bar {
+    animation: none !important;
+  }
+  .tf-page .tf-tilt:hover {
+    transform: none;
+  }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .tf-page .tf-glass {
+    background: var(--tp-paper) !important;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .tf-page .tf-glass {
+    background: var(--tp-paper) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+.tf-page .tf-depth {
+  translate: calc(var(--mx, 0) * var(--dx, 12px)) calc(var(--my, 0) * var(--dx, 12px));
+  transition: translate 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tf-page .tf-wc-layer {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+.tf-page .tf-fibre {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+}
+.tf-page .tf-reveal {
+  animation: tf-in3d linear both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 70%;
+}
+@keyframes tf-in3d {
+  from {
+    opacity: 0;
+    transform: perspective(1100px) rotateX(9deg) translateY(36px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.tf-page .tf-fade-close {
+  animation: tf-fadeclose linear both;
+  animation-timeline: view();
+  animation-range: entry 0% cover 45%;
+}
+.tf-page .tf-fade-close-t {
+  animation: tf-fadeclose 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+@keyframes tf-fadeclose {
+  from {
+    opacity: 0;
+    scale: 0.82;
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    filter: blur(0);
+  }
+}
+.tf-page .tf-bloom {
+  animation: tf-bloom linear both;
+  animation-timeline: view();
+  animation-range: entry 0% cover 60%;
+}
+@keyframes tf-bloom {
+  from {
+    opacity: 0;
+    scale: 0.7;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+.tf-page .tf-still .tf-depth {
+  translate: none;
+}
+.tf-page .tf-still .tf-fade-close,
+.tf-page .tf-still .tf-fade-close-t,
+.tf-page .tf-still .tf-bloom {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tf-page .tf-depth {
+    translate: none !important;
+    transition: none;
+  }
+  .tf-page .tf-fade-close,
+  .tf-page .tf-fade-close-t,
+  .tf-page .tf-bloom,
+  .tf-page .tf-reveal {
+    animation: none !important;
+  }
+}
+
+.tf-page /* round 6: per-card motion that starts when the card is in view */ .tf-play .tf-arm,
+.tf-page .tf-play .tf-body,
+.tf-page .tf-play .tf-sweat,
+.tf-page .tf-play .tf-stress,
+.tf-page .tf-play .tf-wv,
+.tf-page .tf-play .tf-steam,
+.tf-page .tf-play .tf-ripple path {
+  animation-play-state: paused;
+}
+.tf-page .tf-play.tf-on .tf-arm,
+.tf-page .tf-play.tf-on .tf-body,
+.tf-page .tf-play.tf-on .tf-sweat,
+.tf-page .tf-play.tf-on .tf-stress,
+.tf-page .tf-play.tf-on .tf-wv,
+.tf-page .tf-play.tf-on .tf-steam,
+.tf-page .tf-play.tf-on .tf-ripple path {
+  animation-play-state: running;
+}
+.tf-page .tf-arm--leaning {
+  animation: tf-sag 2.8s cubic-bezier(0.3, 0.7, 0.2, 1) 0.25s 1 both;
+}
+@keyframes tf-sag {
+  0% {
+    rotate: -24deg;
+  }
+  40% {
+    rotate: -17deg;
+  }
+  78% {
+    rotate: 3deg;
+  }
+  100% {
+    rotate: 0deg;
+  }
+}
+.tf-page .tf-body--leaning {
+  animation: tf-slump 2.8s ease-out 0.25s 1 both;
+}
+@keyframes tf-slump {
+  0% {
+    translate: 0 -5px;
+  }
+  70% {
+    translate: 0 1px;
+  }
+  100% {
+    translate: 0 0;
+  }
+}
+.tf-page .tf-arm--resting {
+  animation: tf-rest 3.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s 1 both;
+}
+@keyframes tf-rest {
+  0% {
+    rotate: 14deg;
+  }
+  100% {
+    rotate: 0deg;
+  }
+}
+.tf-page .tf-steam {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: tf-steam 4.2s ease-out 1.2s 2 both;
+}
+.tf-page .tf-steam.st2 {
+  animation-delay: 2s;
+}
+@keyframes tf-steam {
+  0% {
+    opacity: 0;
+    translate: 0 7px;
+    scale: 1 0.6;
+  }
+  45% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0.55;
+    translate: 0 0;
+    scale: 1 1;
+  }
+}
+.tf-page .tf-wv-body {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: tf-wvrise 1.7s cubic-bezier(0.2, 0.9, 0.25, 1) var(--d, 0.15s) 1 both;
+}
+@keyframes tf-wvrise {
+  0% {
+    translate: -8% 64%;
+    scale: 1 0.5;
+    opacity: 0.3;
+  }
+  62% {
+    translate: 1% -5%;
+    scale: 1 1.07;
+    opacity: 1;
+  }
+  100% {
+    translate: 0 0;
+    scale: 1 1;
+    opacity: 1;
+  }
+}
+.tf-page .tf-wv-crest {
+  animation: tf-wvdraw 0.9s ease-out var(--d, 1s) 1 both;
+}
+.tf-page .tf-wv-swell.sw1 {
+  animation: tf-wvdrift 19s ease-in-out infinite;
+}
+.tf-page .tf-wv-swell.sw2 {
+  animation: tf-wvdrift 23s ease-in-out -6s infinite reverse;
+}
+.tf-page .tf-ripple path {
+  animation: tf-wvdraw 1.4s ease-out 1 both;
+}
+.tf-page .tf-ripple path:nth-child(2) {
+  animation-delay: 0.3s;
+}
+.tf-page .tf-ripple path:nth-child(3) {
+  animation-delay: 0.6s;
+}
+@keyframes tf-wvdraw {
+  from {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+}
+.tf-page .tf-wv-foam {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: tf-wvpop 0.55s cubic-bezier(0.3, 1.7, 0.5, 1) calc(1.25s + var(--i) * 75ms) 1 both;
+}
+@keyframes tf-wvpop {
+  0% {
+    scale: 0;
+    opacity: 0;
+    translate: 0 10px;
+  }
+  100% {
+    scale: 1;
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+.tf-page .tf-wv-line {
+  animation: tf-wvdraw 0.8s ease-out calc(1.3s + var(--i) * 160ms) 1 both;
+}
+.tf-page .tf-wv-drift {
+  animation: tf-wvdrift 17s ease-in-out 2s infinite;
+}
+@keyframes tf-wvdrift {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  37% {
+    translate: -12px 2px;
+  }
+  71% {
+    translate: 7px -1px;
+  }
+}
+.tf-page .tf-iw {
+  animation: tf-iwpaint 0.75s cubic-bezier(0.4, 0.1, 0.3, 1) calc(0.2s + var(--i) * 330ms) 1 both;
+}
+@keyframes tf-iwpaint {
+  from {
+    clip-path: inset(-20% 100% -20% 0);
+  }
+  to {
+    clip-path: inset(-20% -2% -20% 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tf-page .tf-arm--leaning,
+  .tf-page .tf-body--leaning,
+  .tf-page .tf-arm--resting,
+  .tf-page .tf-steam,
+  .tf-page .tf-wv,
+  .tf-page .tf-iw,
+  .tf-page .tf-wv-swell,
+  .tf-page .tf-ripple path {
+    animation: none !important;
+  }
+}
+.tf-page .tf-still .tf-arm--leaning,
+.tf-page .tf-still .tf-body--leaning,
+.tf-page .tf-still .tf-arm--resting,
+.tf-page .tf-still .tf-steam,
+.tf-page .tf-still .tf-wv,
+.tf-page .tf-still .tf-iw,
+.tf-page .tf-still .tf-wv-swell,
+.tf-page .tf-still .tf-ripple path {
+  animation: none !important;
+}
+
+.tf-page .tf-char {
+  filter: url(#tf-char);
+}
+.tf-page .tf-char.tf-char-ink {
+  filter: url(#tf-char-ink);
+}
+.tf-page .tf-tex {
+  filter: url(#tf-text-a);
+}
+.tf-page /* Prestige-style blur-in on load,.tf-page staggered with --i */ .tf-in {
+  animation: tf-blurin 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 90ms + 120ms);
+}
+@keyframes tf-blurin {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    translate: 0 18px;
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    translate: 0 0;
+  }
+}
+.tf-page .tf-navin {
+  animation: tf-navin 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes tf-navin {
+  from {
+    opacity: 0;
+    translate: 0 -16px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+.tf-page
+  /* fade in AND fade out as things pass through the viewport (individual properties,.tf-page so hover tilts still work) */
+  .tf-persp {
+  perspective: 1200px;
+}
+.tf-page .tf-reveal {
+  animation: tf-life linear both;
+  animation-timeline: view();
+  animation-range: cover 0% cover 100%;
+}
+@keyframes tf-life {
+  0% {
+    opacity: 0;
+    filter: blur(10px);
+    translate: 0 44px;
+    rotate: x 10deg;
+  }
+  16% {
+    opacity: 1;
+    filter: blur(0);
+    translate: 0 0;
+    rotate: x 0deg;
+  }
+  84% {
+    opacity: 1;
+    filter: blur(0);
+    translate: 0 0;
+    rotate: x 0deg;
+  }
+  100% {
+    opacity: 0.18;
+    filter: blur(5px);
+    translate: 0 -26px;
+    rotate: x -4deg;
+  }
+}
+.tf-page .tf-stag {
+  animation: tf-life linear both;
+  animation-timeline: view();
+  animation-range: cover calc(var(--i, 0) * 3%) cover calc(100% - var(--i, 0) * 2%);
+}
+.tf-page /* hero drifts back and fades as you scroll away from it */ .tf-hero-exit {
+  animation: tf-heroexit linear both;
+  animation-timeline: scroll(root);
+  animation-range: 0 640px;
+}
+@keyframes tf-heroexit {
+  from {
+    opacity: 1;
+    filter: blur(0);
+    translate: 0 0;
+  }
+  to {
+    opacity: 0.2;
+    filter: blur(5px);
+    translate: 0 -50px;
+  }
+}
+.tf-page /* AIMRAN-style keynote paragraph: words ink in as you scroll */ .tf-kp {
+  view-timeline-name: --kp;
+}
+.tf-page .tf-word {
+  animation: tf-word linear both;
+  animation-timeline: --kp;
+}
+@keyframes tf-word {
+  from {
+    opacity: 0.16;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.tf-page /* button sheen sweep (Prestige UI) */ .tf-shine {
+  position: relative;
+  overflow: hidden;
+  transition:
+    translate 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.tf-page .tf-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.38) 50%,
+    transparent 70%
+  );
+  translate: -130% 0;
+  transition: translate 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+.tf-page .tf-shine:hover {
+  translate: 0 -2px;
+  box-shadow: 0 14px 26px -14px rgba(0, 0, 0, 0.45);
+}
+.tf-page .tf-shine:hover::after {
+  translate: 130% 0;
+}
+.tf-page .tf-still .tf-in,
+.tf-page .tf-still .tf-navin,
+.tf-page .tf-still .tf-reveal,
+.tf-page .tf-still .tf-stag,
+.tf-page .tf-still .tf-hero-exit,
+.tf-page .tf-still .tf-word {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tf-page .tf-in,
+  .tf-page .tf-navin,
+  .tf-page .tf-reveal,
+  .tf-page .tf-stag,
+  .tf-page .tf-hero-exit,
+  .tf-page .tf-word {
+    animation: none !important;
+  }
+  .tf-page .tf-word {
+    opacity: 1;
+  }
+  .tf-page .tf-shine::after {
+    display: none;
+  }
+  .tf-page .tf-shine:hover {
+    translate: none;
+  }
+}

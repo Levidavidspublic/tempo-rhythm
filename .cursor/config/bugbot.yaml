@@ -1,0 +1,16 @@
+# Bugbot repo config (https://cursor.com/docs/bugbot -> "Repository config file").
+# Read from the PR's BASE branch. Factory batch loop (factory/LOOP.md): Bugbot should review only the
+# loop's batch PR (batch/<loop-id> -> integration), triggered once with "@cursor review".
+# This file can't switch automatic reviews off (no manual-only field exists in the YAML); that is the
+# dashboard setting "Run only when mentioned" (see factory/LOOP.md -> Bugbot settings). What it does:
+#   - drafts: false   -> no automatic review on draft PRs (component PRs stay draft until batched)
+#   - oncePerPr       -> at most one automatic review per PR, never one per push
+#   - autofix disabled (the factory fix loop is factory-review-fix -> lane, max 3 rounds)
+version: 1
+triggers:
+  drafts: false
+  frequency: oncePerPr
+review:
+  incremental: true
+autofix:
+  mode: disabled

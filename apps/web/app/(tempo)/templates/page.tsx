@@ -1,23 +1,12 @@
-/**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
- * @screen: templates
- * @category: You
- * @source: docs/design/claude-export/design-system/screens-templates.jsx
- * @summary: Template library.
- * @queries: templates.list
- * @mutations: (none)
- * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
- */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { ProfileReady } from "@/components/today/ProfileReady";
+import { TemplatesLibrary } from "@/components/templates-library/TemplatesLibrary";
 
 export default function Page() {
   return (
-    <ScaffoldScreen
-      title="Templates"
-      category="You"
-      source="screens-templates.jsx"
-      summary="Template library."
-    />
+    <div data-testid="templates-library-route">
+      <ProfileReady>
+        <TemplatesLibrary />
+      </ProfileReady>
+    </div>
   );
 }
