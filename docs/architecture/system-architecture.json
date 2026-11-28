@@ -10,10 +10,118 @@
       "url": "https://github.com/Levidavidspublic/tempo-rhythm",
       "provider": "github",
       "link_mode": "web",
-      "revision": "5f9cf22443ed7a15881f1214b3b31ac203c82a21"
+      "revision": "7e762926e4125447c469c9207d21d6c1c261e665"
     }
   },
   "components": [
+    {
+      "id": "hostinger",
+      "type": "cloud",
+      "label": "Hostinger bundle",
+      "sublabel": "standalone, built with Bun",
+      "pos": [
+        36,
+        48
+      ],
+      "size": [
+        170,
+        60
+      ],
+      "tag": "not deployed yet",
+      "sources": [
+        {
+          "path": "apps/web/next.config.ts",
+          "line": 8,
+          "end_line": 8,
+          "label": "output standalone"
+        }
+      ]
+    },
+    {
+      "id": "insforgeauth",
+      "type": "security",
+      "label": "InsForge Auth",
+      "sublabel": "email OTP, account gate",
+      "pos": [
+        1100,
+        48
+      ],
+      "size": [
+        170,
+        60
+      ],
+      "sources": [
+        {
+          "path": "apps/web/lib/insforge/otp.ts",
+          "line": 1,
+          "end_line": 20,
+          "label": "OTP actions"
+        },
+        {
+          "path": "insforge/migrations/20261127030000_tempo-approval-gate.sql",
+          "line": 1,
+          "end_line": 1,
+          "label": "approval gate migration"
+        }
+      ]
+    },
+    {
+      "id": "insforge",
+      "type": "backend",
+      "label": "InsForge (target)",
+      "sublabel": "Postgres + RLS, realtime",
+      "pos": [
+        1080,
+        240
+      ],
+      "size": [
+        210,
+        80
+      ],
+      "sources": [
+        {
+          "path": "apps/web/lib/insforge/client.ts",
+          "line": 1,
+          "end_line": 30,
+          "label": "@insforge/sdk client"
+        },
+        {
+          "path": "apps/web/lib/insforge/use-live-rows.ts",
+          "line": 1,
+          "end_line": 1,
+          "label": "live rows hook"
+        },
+        {
+          "path": "insforge/migrations/20261127010000_tempo-identity-tasks.sql",
+          "line": 1,
+          "end_line": 1,
+          "label": "identity and tasks migration"
+        }
+      ]
+    },
+    {
+      "id": "insdata",
+      "type": "database",
+      "label": "InsForge Postgres",
+      "sublabel": "dev project, RLS per owner",
+      "pos": [
+        1100,
+        440
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "tag": "prod UNKNOWN",
+      "sources": [
+        {
+          "path": "docs/backlog/INSFORGE-MIGRATION-PLAN.md",
+          "line": 1,
+          "end_line": 1,
+          "label": "migration plan"
+        }
+      ]
+    },
     {
       "id": "person",
       "type": "external",
@@ -54,7 +162,7 @@
       "id": "vercel",
       "type": "cloud",
       "label": "Vercel",
-      "sublabel": "preview + production",
+      "sublabel": "preview + production today",
       "pos": [
         250,
         48
@@ -83,7 +191,7 @@
       "id": "web",
       "type": "frontend",
       "label": "Web app",
-      "sublabel": "Next.js 16 PWA",
+      "sublabel": "Next.js 16, standalone",
       "pos": [
         250,
         250
@@ -133,7 +241,7 @@
     {
       "id": "auth",
       "type": "security",
-      "label": "Convex Auth",
+      "label": "Convex Auth (current)",
       "sublabel": "Resend magic link",
       "pos": [
         600,
@@ -162,7 +270,7 @@
       "id": "convex",
       "type": "backend",
       "label": "Convex functions",
-      "sublabel": "queries, mutations, http, /mcp",
+      "sublabel": "current, read-only until Stage 5",
       "pos": [
         560,
         240
@@ -308,6 +416,16 @@
   ],
   "boundaries": [
     {
+      "kind": "security-group",
+      "label": "InsForge cloud",
+      "wraps": [
+        "insforgeauth",
+        "insforge",
+        "insdata"
+      ],
+      "pad": 18
+    },
+    {
       "kind": "region",
       "label": "Client devices",
       "wraps": [
@@ -337,6 +455,26 @@
     }
   ],
   "connections": [
+    {
+      "id": "web-insforge",
+      "from": "web",
+      "to": "insforge",
+      "label": "@insforge/sdk"
+    },
+    {
+      "id": "insforge-data",
+      "from": "insforge",
+      "to": "insdata",
+      "label": "PostgREST + RLS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "insauth-insforge",
+      "from": "insforgeauth",
+      "to": "insforge",
+      "label": "session",
+      "variant": "security"
+    },
     {
       "id": "person-web",
       "from": "person",
@@ -417,16 +555,17 @@
       "items": [
         "Web is apps/web (Next.js 16). Mobile is apps/mobile (Expo 54). Package manager is Bun.",
         "Vercel preview of integration is https://preview.tempoflow.dev (docs/ENVIRONMENTS.md). Production is https://www.tempoflow.dev (release.yml health check).",
-        "Polar checkout route sets server to sandbox."
+        "Polar checkout route sets server to sandbox.",
+        "Hostinger standalone bundle assembler exists (TEMPO-P42); it does not deploy or change DNS. Plan: hosting moves from Vercel to InsForge after the migration merges. Final host: UNKNOWN."
       ]
     },
     {
       "dot": "emerald",
-      "title": "Convex deployments",
+      "title": "Backends: Convex to InsForge",
       "items": [
-        "Registry: dev tremendous-bass-443, staging ceaseless-dog-617, prod precious-wildcat-890.",
-        "Workflows call ceaseless-dog-617 the test deployment. ENVIRONMENTS.md also allows a personal dev slug.",
-        "convex-deploy-test pushes integration convex/ to the test deployment. Prod (precious-wildcat-890) deploys only from the Amit-only Release to production workflow."
+        "Backend is moving from Convex to InsForge (Amit, 2026-11-25; Firebase stopped). Plan: docs/backlog/INSFORGE-MIGRATION-PLAN.md. convex/ is read-only until Stage 5.",
+        "InsForge: Postgres + RLS through @insforge/sdk, email OTP auth with an account gate, SQL in insforge/migrations/. Server ops folder apps/web/lib/server/ops/ is not on integration yet. Which InsForge project serves production: UNKNOWN.",
+        "Convex (still live): dev tremendous-bass-443, staging ceaseless-dog-617 (test), prod precious-wildcat-890. convex-deploy-test pushes convex/ to the test deployment; prod deploys only from the Amit-only release flow."
       ]
     },
     {
@@ -442,8 +581,8 @@
       "dot": "rose",
       "title": "Trust boundary",
       "items": [
-        "People, Vercel, Polar, DeepInfra, MCP clients, and RevenueCat sit outside the Convex security group.",
-        "Convex Auth, functions, and data sit inside it. The RevenueCat webhook and token-authenticated /mcp are the crossings into Convex.",
+        "People, Vercel, Polar, DeepInfra, MCP clients, and RevenueCat sit outside the Convex and InsForge security groups.",
+        "Convex Auth, functions, and data sit in one group; InsForge Auth, API and Postgres in another (owner rows under RLS). The RevenueCat webhook and token-authenticated /mcp are the crossings into Convex.",
         "Web checkout calls Polar from the Next.js route. The access token stays in server env."
       ]
     }
