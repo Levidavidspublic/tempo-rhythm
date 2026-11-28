@@ -48,6 +48,19 @@ function die(message: string): never {
   throw new Error(message);
 }
 
+function assertSafeOutDir(out: string): void {
+  const root = path.resolve(repoRoot);
+  if (out === root || root.startsWith(`${out}${path.sep}`)) {
+    die("Refusing output directory: it is the repository or a parent of it.");
+  }
+  const rel = path.relative(root, out);
+  const inside = rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel);
+  if (!inside) return;
+  if (rel.split(path.sep)[0] !== "dist") {
+    die("Refusing output directory inside the repository unless it is under dist/.");
+  }
+}
+
 function unset(names: readonly string[]): string[] {
   return names.filter((name) => {
     const value = process.env[name];
@@ -67,6 +80,7 @@ if (missing.length > 0) {
 
 const outDir = path.resolve(process.argv[2] ?? path.join(repoRoot, "dist/hostinger"));
 const tarball = `${outDir}.tgz`;
+assertSafeOutDir(outDir);
 
 const build = spawnSync("bun", ["run", "--filter=tempo-rhythm-web", "build"], {
   cwd: repoRoot,
@@ -165,6 +179,11 @@ const { spawn } = require("node:child_process");
 const path = require("node:path");
 const server = path.join(__dirname, ${JSON.stringify(rel)});
 const child = spawn(process.execPath, [server], { stdio: "inherit", env: process.env });
+function stopChild(signal) {
+  if (!child.killed) child.kill(signal);
+}
+process.on("SIGTERM", () => stopChild("SIGTERM"));
+process.on("SIGINT", () => stopChild("SIGINT"));
 child.on("exit", (code, signal) => {
   if (signal) {
     process.kill(process.pid, signal);
