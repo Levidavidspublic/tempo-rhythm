@@ -147,15 +147,12 @@ export function checkPageOperationDoc(input: unknown): CheckResult {
     }
   }
 
-  for (const key of [
-    "appliedAtMs",
-    "undoUntilMs",
-    "undoneAtMs",
-    "metadataExpiresAtMs",
-    "createdAt",
-    "updatedAt",
-    "deletedAt",
-  ] as const) {
+  for (const key of ["appliedAtMs", "metadataExpiresAtMs", "createdAt", "updatedAt"] as const) {
+    if (!isTimestamp(record[key])) {
+      return fail(`${key} must be a safe nonnegative integer timestamp`);
+    }
+  }
+  for (const key of ["undoUntilMs", "undoneAtMs", "deletedAt"] as const) {
     if (record[key] !== undefined && !isTimestamp(record[key])) {
       return fail(`${key} must be a safe nonnegative integer timestamp`);
     }
