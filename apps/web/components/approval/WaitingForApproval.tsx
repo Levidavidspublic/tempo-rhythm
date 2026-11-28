@@ -4,10 +4,12 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useRef, useState } from "react";
+import { signOutInsforge } from "@/app/sign-in/insforge-actions";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon, TpIconSprite } from "@/components/tempo/TpIcon";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
+import { invalidateInsforgeSession } from "@/lib/insforge/client";
 import {
   WAITING_NAME_HINT,
   WAITING_NAME_MAX,
@@ -64,9 +66,32 @@ export function WaitingForApproval({
             {email}
           </span>
         </p>
-        {backend === "convex" ? <ConvexSignOut /> : null}
+        {backend === "insforge" ? <InsforgeSignOut /> : <ConvexSignOut />}
       </section>
     </main>
+  );
+}
+
+function InsforgeSignOut() {
+  const router = useRouter();
+  const { t } = useLocale();
+  const [signingOut, setSigningOut] = useState(false);
+
+  async function onSignOut() {
+    setSigningOut(true);
+    try {
+      await signOutInsforge();
+      invalidateInsforgeSession();
+      router.replace("/sign-in");
+    } finally {
+      setSigningOut(false);
+    }
+  }
+
+  return (
+    <Button type="button" variant="outline" onClick={onSignOut} disabled={signingOut}>
+      {signingOut ? t("approval.signingOut") : t("approval.signOut")}
+    </Button>
   );
 }
 
