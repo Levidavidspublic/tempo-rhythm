@@ -180,7 +180,7 @@ describe("ApprovalGate render", () => {
     expect(html).toContain(title);
     expect(html).not.toContain(protectedChild);
     expect(html).not.toContain("approval-name");
-    expect(html).not.toContain("Sign out");
+    expect(html).toContain("Sign out");
     expect(useQuery).not.toHaveBeenCalled();
     expect(useMutation).not.toHaveBeenCalled();
     expect(useAuthActions).not.toHaveBeenCalled();
